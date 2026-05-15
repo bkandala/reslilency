@@ -3,6 +3,7 @@ import {
   loadHeader,
   loadFooter,
   sampleRUM,
+  getMetadata,
   decorateIcons,
   decorateSections,
   decorateBlocks,
@@ -11,8 +12,43 @@ import {
   loadCSS,
 } from './aem.js';
 
+const DEFAULT_FOUNDATION_FOLDER = 'foundation';
+
 /**
- * Returns block asset candidates for namespaced and legacy block layouts.
+ * Sanitizes folder names used in block resolution.
+ * Allows only lowercase letters, numbers, and hyphens to keep paths safe.
+ * @param {string} name folder name candidate
+ * @returns {string} safe folder name
+ */
+function toFolderName(name) {
+  if (typeof name !== 'string') return '';
+  const normalizedName = name.trim().toLowerCase();
+  if (normalizedName.includes('..') || normalizedName.startsWith('/')) return '';
+  return /^[a-z][0-9a-z-]*$/.test(normalizedName) ? normalizedName : '';
+}
+
+/**
+ * Returns folder list to resolve blocks from.
+ * @returns {Array<string>} configured block folders
+ */
+function getBlockFolders() {
+  const configuredFolders = (Array.isArray(window.hlx?.blockFolders) ? window.hlx.blockFolders : [])
+    .map(toFolderName)
+    .filter(Boolean);
+  const metadataFolders = (getMetadata('block-folders') || '')
+    .split(',')
+    .map((folder) => toFolderName(folder))
+    .filter(Boolean);
+
+  // keep foundation as the final fallback, regardless of configuration order
+  const orderedFolders = [...configuredFolders, ...metadataFolders]
+    .filter((folder) => folder !== DEFAULT_FOUNDATION_FOLDER);
+  orderedFolders.push(DEFAULT_FOUNDATION_FOLDER);
+  return [...new Set(orderedFolders)];
+}
+
+/**
+ * Returns block asset candidates for folder-based and legacy block layouts.
  * @param {string} blockName The block name
  * @returns {Array} list of js/css candidates
  */
@@ -28,16 +64,8 @@ function getBlockAssetCandidates(blockName) {
     }
   };
 
-  const firstDash = blockName.indexOf('-');
-  if (firstDash > 0) {
-    const namespace = blockName.substring(0, firstDash);
-    const shortName = blockName.substring(firstDash + 1);
-    addCandidate(`${namespace}/${shortName}/${shortName}`);
-    addCandidate(`foundation/${shortName}/${shortName}`);
-    addCandidate(`${shortName}/${shortName}`);
-  } else {
-    addCandidate(`${blockName}/${blockName}`);
-  }
+  getBlockFolders().forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
+  addCandidate(`${blockName}/${blockName}`);
 
   return candidates;
 }

@@ -33,11 +33,14 @@ npm run lint
 1. Start AEM Proxy: `aem up` (opens your browser at `http://localhost:3000`)
 1. Open the `{repo}` directory in your favorite IDE and start coding :)
 
-## Block namespaces
+## Team block folders (submodule-friendly)
 
 - Shared/reusable blocks are available under `/blocks/foundation/<block-name>`.
-- Team-specific overrides can be added under `/blocks/<team-name>/<block-name>`.
-- A block authored as `<team-name>-<block-name>` resolves in this order:
-  1. `/blocks/<team-name>/<block-name>/<block-name>.{js|css}`
+- Team blocks can live in dedicated folders under `/blocks/<team-folder>/...` (for example as git submodules).
+- Keep authored block names unchanged (for example `hero`, `cards`, `columns`), then configure which folders to search:
+  - Metadata: `<meta name="block-folders" content="team-a, team-b">`
+  - Runtime config: `window.hlx.blockFolders = ['team-a', 'team-b'];` (set this before `/scripts/scripts.js` loads, for example in `head.html`)
+- Block resolution order for an authored `<block-name>` is:
+  1. `/blocks/<configured-folder>/<block-name>/<block-name>.{js|css}` (in configured order)
   2. `/blocks/foundation/<block-name>/<block-name>.{js|css}`
   3. `/blocks/<block-name>/<block-name>.{js|css}` (legacy compatibility)
