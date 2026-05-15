@@ -22,7 +22,8 @@ Create a block table with `region-picker` as the block name.
 
 ## 2) Configure options in site-config
 
-The block reads options from `/site-config.json` and matches rows where `key` (or `name`) equals the block `options-key`.
+The block reads options from `/site-config.json` and matches rows where `key` equals the block `options-key`.
+`name` is also supported as a fallback alias, but authors should prefer `key` for consistency.
 
 You can author options in either format below.
 
