@@ -55,7 +55,7 @@ function extractOptions(rows, optionsKey) {
 
 async function getSiteConfigRows() {
   const response = await fetch('/site-config.json');
-  if (!response.ok) throw new Error('Failed to fetch /site-config.json');
+  if (!response.ok) throw new Error(`Failed to fetch /site-config.json (status: ${response.status})`);
   const payload = await response.json();
   return Array.isArray(payload.data) ? payload.data : [];
 }
@@ -104,7 +104,7 @@ export default async function decorate(block) {
     }
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error('Region picker could not load options from site-config', error);
+    console.error('Region picker failed to load options from /site-config.json', error);
     select.disabled = true;
   }
 
