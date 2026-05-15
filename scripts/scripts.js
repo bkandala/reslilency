@@ -2,15 +2,136 @@ import {
   buildBlock,
   loadHeader,
   loadFooter,
+  sampleRUM,
   decorateIcons,
   decorateSections,
   decorateBlocks,
   decorateTemplateAndTheme,
   waitForFirstImage,
-  loadSection,
-  loadSections,
   loadCSS,
 } from './aem.js';
+
+/**
+ * Returns block asset candidates for namespaced and legacy block layouts.
+ * @param {string} blockName The block name
+ * @returns {Array} list of js/css candidates
+ */
+function getBlockAssetCandidates(blockName) {
+  const candidates = [];
+  const addCandidate = (path) => {
+    if (!candidates.find((candidate) => candidate.path === path)) {
+      candidates.push({
+        path,
+        js: `${window.hlx.codeBasePath}/blocks/${path}.js`,
+        css: `${window.hlx.codeBasePath}/blocks/${path}.css`,
+      });
+    }
+  };
+
+  addCandidate(`${blockName}/${blockName}`);
+
+  const firstDash = blockName.indexOf('-');
+  if (firstDash > 0) {
+    const namespace = blockName.substring(0, firstDash);
+    const shortName = blockName.substring(firstDash + 1);
+    addCandidate(`${namespace}/${shortName}/${shortName}`);
+    addCandidate(`foundation/${shortName}/${shortName}`);
+    addCandidate(`${shortName}/${shortName}`);
+  }
+
+  return candidates;
+}
+
+/**
+ * Loads JS and CSS for a block with fallback support.
+ * @param {Element} block The block element
+ * @returns {Promise<Element>} loaded block
+ */
+async function loadBlock(block) {
+  const status = block.dataset.blockStatus;
+  if (status !== 'loading' && status !== 'loaded') {
+    block.dataset.blockStatus = 'loading';
+    const { blockName } = block.dataset;
+    const assetCandidates = getBlockAssetCandidates(blockName);
+    let loaded = false;
+
+    for (let i = 0; i < assetCandidates.length; i += 1) {
+      const candidate = assetCandidates[i];
+      let mod;
+      let moduleLoaded = false;
+      let cssLoaded = false;
+
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        mod = await import(candidate.js);
+        moduleLoaded = true;
+      } catch (error) {
+        // JS is optional for CSS-only blocks
+      }
+
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await loadCSS(candidate.css);
+        cssLoaded = true;
+      } catch (error) {
+        // keep trying other locations
+      }
+
+      if (moduleLoaded && mod.default) {
+        // eslint-disable-next-line no-await-in-loop
+        await mod.default(block);
+      }
+
+      if (moduleLoaded || cssLoaded) {
+        loaded = true;
+        break;
+      }
+    }
+
+    if (!loaded) {
+      // eslint-disable-next-line no-console
+      console.error(`failed to load module for ${blockName}`);
+    }
+
+    block.dataset.blockStatus = 'loaded';
+  }
+  return block;
+}
+
+/**
+ * Loads all blocks in a section.
+ * @param {Element} section The section element
+ * @param {Function} loadCallback callback after section loads
+ */
+async function loadSection(section, loadCallback) {
+  const status = section.dataset.sectionStatus;
+  if (!status || status === 'initialized') {
+    section.dataset.sectionStatus = 'loading';
+    const blocks = [...section.querySelectorAll('div.block')];
+    for (let i = 0; i < blocks.length; i += 1) {
+      // eslint-disable-next-line no-await-in-loop
+      await loadBlock(blocks[i]);
+    }
+    if (loadCallback) await loadCallback(section);
+    section.dataset.sectionStatus = 'loaded';
+    section.style.display = null;
+  }
+}
+
+/**
+ * Loads all sections.
+ * @param {Element} element parent element of sections
+ */
+async function loadSections(element) {
+  const sections = [...element.querySelectorAll('div.section')];
+  for (let i = 0; i < sections.length; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await loadSection(sections[i]);
+    if (i === 0 && sampleRUM.enhance) {
+      sampleRUM.enhance();
+    }
+  }
+}
 
 /**
  * Builds hero block and prepends to main in a new section.
