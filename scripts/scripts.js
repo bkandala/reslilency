@@ -32,7 +32,7 @@ function toFolderName(name) {
  * @returns {Array<string>} configured block folders
  */
 function getBlockFolders() {
-  const configuredFolders = (Array.isArray(window.hlx?.blockFolders) ? window.hlx.blockFolders : [])
+  const configuredFolders = (Array.isArray(window.hlx?.blockFolders) ? window.hlx.blockFolders : ['comms'])
     .map(toFolderName)
     .filter(Boolean);
   const metadataFolders = (getMetadata('block-folders') || '')
