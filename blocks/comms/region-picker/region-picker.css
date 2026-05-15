@@ -1,0 +1,25 @@
+.region-picker {
+  max-width: 360px;
+}
+
+.region-picker .region-picker-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.region-picker .region-picker-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--dark-color);
+  border-radius: 4px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+.region-picker .region-picker-select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
