@@ -37,9 +37,13 @@ You can author options in either format below.
 
 ### Format B: comma/newline list in `value`
 
-| key | value |
-| --- | --- |
-| regions | United States\|us, Canada\|ca, Mexico\|mx |
+Use a single `value` cell for the selected `key`, with comma-separated or newline-separated tokens:
+
+- `United States|us, Canada|ca, Mexico|mx`
+- or one token per line:
+  - `United States|us`
+  - `Canada|ca`
+  - `Mexico|mx`
 
 You can also omit explicit values (`United States, Canada`) and the block will auto-generate values (kebab-case).
 
