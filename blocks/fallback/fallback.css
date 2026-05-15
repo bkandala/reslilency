@@ -1,0 +1,46 @@
+.fallback .region-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 320px;
+  padding: 16px;
+}
+
+.fallback .region-picker label {
+  font-size: var(--body-font-size-s, 0.875rem);
+  font-weight: 600;
+  color: var(--text-color, #333);
+}
+
+.fallback .region-picker select {
+  appearance: none;
+  background-color: var(--background-color, #fff);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  border: 1px solid var(--border-color, #dadada);
+  border-radius: 4px;
+  color: var(--text-color, #333);
+  cursor: pointer;
+  font-size: var(--body-font-size-m, 1rem);
+  padding: 10px 40px 10px 12px;
+  width: 100%;
+}
+
+.fallback .region-picker select:focus {
+  border-color: var(--link-color, #035fe6);
+  outline: 2px solid var(--link-color, #035fe6);
+  outline-offset: 2px;
+}
+
+@media (width >= 600px) {
+  .fallback .region-picker {
+    flex-direction: row;
+    align-items: center;
+    max-width: 480px;
+  }
+
+  .fallback .region-picker label {
+    white-space: nowrap;
+  }
+}
