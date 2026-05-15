@@ -12,6 +12,8 @@ function parseRegionList(rawRegions) {
 }
 
 async function getSiteConfig() {
+  // Cache the fetch promise so multiple region-picker instances on a page
+  // don't trigger duplicate requests for /site-config.json.
   if (!siteConfigPromise) {
     siteConfigPromise = (async () => {
       try {
@@ -45,7 +47,7 @@ export default async function decorate(block) {
   );
   pickerCount += 1;
   const id = `region-picker-select-${
-    window.crypto?.randomUUID?.() || `${Date.now()}-${pickerCount}`
+    window.crypto?.randomUUID?.() || `fallback-${pickerCount}`
   }`;
 
   const wrapper = document.createElement('div');
