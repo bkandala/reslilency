@@ -50,14 +50,14 @@ function extractOptions(rows, optionsKey) {
 
 async function getSiteConfigRows() {
   const response = await fetch('/site-config.json');
-  if (!response.ok) throw new Error('Unable to load site-config sheet');
+  if (!response.ok) throw new Error('Failed to fetch /site-config.json');
   const payload = await response.json();
   return Array.isArray(payload.data) ? payload.data : [];
 }
 
 export default async function decorate(block) {
   const config = readBlockConfig(block);
-  const optionsKey = toClassName(config['options-key'] || config.options || config.key || 'regions');
+  const siteConfigKey = toClassName(config['options-key'] || config.options || config.key || 'regions');
   const labelText = String(config.label || 'Region');
   const placeholderText = String(config.placeholder || 'Select a region');
 
@@ -70,7 +70,7 @@ export default async function decorate(block) {
 
   const select = document.createElement('select');
   select.className = 'region-picker-select';
-  select.name = optionsKey;
+  select.name = siteConfigKey;
   select.setAttribute('aria-label', labelText);
 
   const placeholderOption = document.createElement('option');
@@ -81,7 +81,7 @@ export default async function decorate(block) {
 
   try {
     const rows = await getSiteConfigRows();
-    const options = extractOptions(rows, optionsKey);
+    const options = extractOptions(rows, siteConfigKey);
 
     options.forEach((entry) => {
       const option = document.createElement('option');
