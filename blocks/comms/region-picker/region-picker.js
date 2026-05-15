@@ -41,7 +41,7 @@ function extractOptions(rows, optionsKey) {
 
   const uniqueValues = new Set();
   return options.filter((option) => {
-    const key = option.value.toLowerCase();
+    const key = option.value;
     if (uniqueValues.has(key)) return false;
     uniqueValues.add(key);
     return true;
@@ -70,7 +70,7 @@ export default async function decorate(block) {
 
   const select = document.createElement('select');
   select.className = 'region-picker-select';
-  select.name = optionsKey || 'region';
+  select.name = optionsKey;
   select.setAttribute('aria-label', labelText);
 
   const placeholderOption = document.createElement('option');
@@ -94,6 +94,8 @@ export default async function decorate(block) {
       select.disabled = true;
     }
   } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('Region picker could not load options from site-config', e);
     select.disabled = true;
   }
 
