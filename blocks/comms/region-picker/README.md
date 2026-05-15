@@ -45,7 +45,7 @@ Use a single `value` cell for the selected `key`, with comma-separated or newlin
   - `Canada|ca`
   - `Mexico|mx`
 
-You can also omit explicit values (`United States, Canada`) and the block will auto-generate values (kebab-case).
+You can also omit explicit values (`United States, Canada`) and the block will auto-generate kebab-case values (for example `United States` → `united-states`, `Canada` → `canada`).
 
 ## Notes
 
