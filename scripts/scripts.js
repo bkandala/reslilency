@@ -67,6 +67,12 @@ function buildAutoBlocks(main) {
       });
     }
 
+    main.querySelectorAll('div.region-picker').forEach((block) => {
+      if (!block.classList.contains('fallback')) {
+        block.className = `fallback ${block.className}`.trim();
+      }
+    });
+
     buildHeroBlock(main);
   } catch (error) {
     // eslint-disable-next-line no-console

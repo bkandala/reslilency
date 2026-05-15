@@ -1,4 +1,6 @@
 const DEFAULT_REGIONS = ['North California', 'South California', 'Nevada', 'Washington'];
+let siteConfigPromise;
+let pickerCount = 0;
 
 function parseRegionList(rawRegions) {
   if (!rawRegions || typeof rawRegions !== 'string') return DEFAULT_REGIONS;
@@ -10,19 +12,25 @@ function parseRegionList(rawRegions) {
 }
 
 async function getSiteConfig() {
-  try {
-    const resp = await fetch('/site-config.json');
-    if (!resp.ok) return {};
-    const json = await resp.json();
-    return (json?.data || []).reduce((config, row) => {
-      const key = row?.key?.trim()?.toLowerCase();
-      const value = row?.value?.trim();
-      if (key && value) config[key] = value;
-      return config;
-    }, {});
-  } catch {
-    return {};
+  if (!siteConfigPromise) {
+    siteConfigPromise = (async () => {
+      try {
+        const resp = await fetch('/site-config.json');
+        if (!resp.ok) return {};
+        const json = await resp.json();
+        return (json?.data || []).reduce((config, row) => {
+          const key = row?.key?.trim()?.toLowerCase();
+          const value = row?.value?.trim();
+          if (key && value) config[key] = value;
+          return config;
+        }, {});
+      } catch {
+        return {};
+      }
+    })();
   }
+
+  return siteConfigPromise;
 }
 
 export default async function decorate(block) {
@@ -30,7 +38,8 @@ export default async function decorate(block) {
   const regions = parseRegionList(
     config['region-picker-values'] || config['region-picker-options'] || config.regions,
   );
-  const id = `region-picker-select-${Math.random().toString(16).slice(2, 10)}`;
+  pickerCount += 1;
+  const id = `region-picker-select-${pickerCount}`;
 
   const wrapper = document.createElement('div');
   wrapper.className = 'picker-field';
