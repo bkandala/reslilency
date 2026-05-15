@@ -1,8 +1,7 @@
 import { readBlockConfig, toClassName } from '../../../scripts/aem.js';
 
 function toOptionValue(label) {
-  const normalized = toClassName(label);
-  return normalized || label;
+  return toClassName(label);
 }
 
 /**
@@ -33,10 +32,12 @@ function normalizeKey(row) {
 function extractOptions(rows, optionsKey) {
   const matchingRows = rows.filter((row) => normalizeKey(row) === optionsKey);
   const options = matchingRows.flatMap((row) => {
-    if (row.label && row.value) {
+    const hasLabel = row.label !== undefined && row.label !== null;
+    const hasValue = row.value !== undefined && row.value !== null;
+    if (hasLabel && hasValue) {
       return [{
         label: String(row.label).trim(),
-        value: String(row.value).trim() || toOptionValue(String(row.label).trim()),
+        value: String(row.value).trim(),
       }];
     }
     return splitTokens(row.value)
@@ -55,7 +56,7 @@ function extractOptions(rows, optionsKey) {
 
 async function getSiteConfigRows() {
   const response = await fetch('/site-config.json');
-  if (!response.ok) throw new Error(`Failed to fetch /site-config.json (status: ${response.status})`);
+  if (!response.ok) throw new Error(`Failed to fetch site configuration (status: ${response.status})`);
   const payload = await response.json();
   return Array.isArray(payload.data) ? payload.data : [];
 }
@@ -104,7 +105,7 @@ export default async function decorate(block) {
     }
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error('Region picker failed to load options from /site-config.json', error);
+    console.error('Region picker failed to load options', error);
     select.disabled = true;
   }
 
