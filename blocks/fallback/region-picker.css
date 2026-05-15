@@ -1,4 +1,4 @@
-:is(.region-picker, .fallback) .picker-field {
+.fallback .picker-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -6,13 +6,13 @@
   padding: 16px;
 }
 
-:is(.region-picker, .fallback) .picker-field label {
+.fallback .picker-field label {
   color: var(--text-color, #333);
   font-size: var(--body-font-size-s, 0.875rem);
   font-weight: 600;
 }
 
-:is(.region-picker, .fallback) .picker-field select {
+.fallback .picker-field select {
   appearance: none;
   width: 100%;
   padding: 10px 40px 10px 12px;
@@ -27,20 +27,20 @@
   font-size: var(--body-font-size-m, 1rem);
 }
 
-:is(.region-picker, .fallback) .picker-field select:focus {
+.fallback .picker-field select:focus {
   border-color: var(--link-color, #035fe6);
   outline: 2px solid var(--link-color, #035fe6);
   outline-offset: 2px;
 }
 
 @media (width >= 600px) {
-  :is(.region-picker, .fallback) .picker-field {
+  .fallback .picker-field {
     flex-direction: row;
     align-items: center;
     max-width: 480px;
   }
 
-  :is(.region-picker, .fallback) .picker-field label {
+  .fallback .picker-field label {
     white-space: nowrap;
   }
 }

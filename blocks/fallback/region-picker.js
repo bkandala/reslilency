@@ -35,11 +35,18 @@ async function getSiteConfig() {
 
 export default async function decorate(block) {
   const config = await getSiteConfig();
+  // Supported Site Config keys:
+  // - region-picker-values (preferred): comma/newline-separated regions
+  // - region-picker-options: alias for region-picker-values
+  // - regions: fallback alias
+  // - region-picker-label: label text
   const regions = parseRegionList(
     config['region-picker-values'] || config['region-picker-options'] || config.regions,
   );
   pickerCount += 1;
-  const id = `region-picker-select-${pickerCount}`;
+  const id = `region-picker-select-${
+    window.crypto?.randomUUID?.() || `${Date.now()}-${pickerCount}`
+  }`;
 
   const wrapper = document.createElement('div');
   wrapper.className = 'picker-field';
