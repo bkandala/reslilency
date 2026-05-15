@@ -28,8 +28,6 @@ function getBlockAssetCandidates(blockName) {
     }
   };
 
-  addCandidate(`${blockName}/${blockName}`);
-
   const firstDash = blockName.indexOf('-');
   if (firstDash > 0) {
     const namespace = blockName.substring(0, firstDash);
@@ -37,6 +35,8 @@ function getBlockAssetCandidates(blockName) {
     addCandidate(`${namespace}/${shortName}/${shortName}`);
     addCandidate(`foundation/${shortName}/${shortName}`);
     addCandidate(`${shortName}/${shortName}`);
+  } else {
+    addCandidate(`${blockName}/${blockName}`);
   }
 
   return candidates;
@@ -53,44 +53,50 @@ async function loadBlock(block) {
     block.dataset.blockStatus = 'loading';
     const { blockName } = block.dataset;
     const assetCandidates = getBlockAssetCandidates(blockName);
-    let loaded = false;
+    let assetLoaded = false;
+    let fallbackError;
+    let cssFound = false;
 
     for (let i = 0; i < assetCandidates.length; i += 1) {
       const candidate = assetCandidates[i];
-      let mod;
+      let blockModule;
       let moduleLoaded = false;
-      let cssLoaded = false;
 
       try {
         // eslint-disable-next-line no-await-in-loop
-        mod = await import(candidate.js);
+        blockModule = await import(candidate.js);
         moduleLoaded = true;
       } catch (error) {
+        fallbackError = error;
         // JS is optional for CSS-only blocks
       }
 
       try {
         // eslint-disable-next-line no-await-in-loop
         await loadCSS(candidate.css);
-        cssLoaded = true;
+        cssFound = true;
       } catch (error) {
-        // keep trying other locations
+        fallbackError = error;
       }
 
-      if (moduleLoaded && mod.default) {
+      if (moduleLoaded && blockModule.default) {
         // eslint-disable-next-line no-await-in-loop
-        await mod.default(block);
+        await blockModule.default(block);
       }
 
-      if (moduleLoaded || cssLoaded) {
-        loaded = true;
+      if (moduleLoaded) {
+        assetLoaded = true;
         break;
       }
     }
 
-    if (!loaded) {
+    if (!assetLoaded && cssFound) {
+      assetLoaded = true;
+    }
+
+    if (!assetLoaded) {
       // eslint-disable-next-line no-console
-      console.error(`failed to load module for ${blockName}`);
+      console.error(`failed to load module for ${blockName}`, fallbackError);
     }
 
     block.dataset.blockStatus = 'loaded';
@@ -103,7 +109,7 @@ async function loadBlock(block) {
  * @param {Element} section The section element
  * @param {Function} loadCallback callback after section loads
  */
-async function loadSection(section, loadCallback) {
+async function loadSectionWithFallback(section, loadCallback) {
   const status = section.dataset.sectionStatus;
   if (!status || status === 'initialized') {
     section.dataset.sectionStatus = 'loading';
@@ -122,11 +128,11 @@ async function loadSection(section, loadCallback) {
  * Loads all sections.
  * @param {Element} element parent element of sections
  */
-async function loadSections(element) {
+async function loadSectionsWithFallback(element) {
   const sections = [...element.querySelectorAll('div.section')];
   for (let i = 0; i < sections.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    await loadSection(sections[i]);
+    await loadSectionWithFallback(sections[i]);
     if (i === 0 && sampleRUM.enhance) {
       sampleRUM.enhance();
     }
@@ -258,7 +264,7 @@ async function loadEager(doc) {
   if (main) {
     decorateMain(main);
     document.body.classList.add('appear');
-    await loadSection(main.querySelector('.section'), waitForFirstImage);
+    await loadSectionWithFallback(main.querySelector('.section'), waitForFirstImage);
   }
 
   try {
@@ -279,7 +285,7 @@ async function loadLazy(doc) {
   loadHeader(doc.querySelector('header'));
 
   const main = doc.querySelector('main');
-  await loadSections(main);
+  await loadSectionsWithFallback(main);
 
   const { hash } = window.location;
   const element = hash ? doc.getElementById(hash.substring(1)) : false;

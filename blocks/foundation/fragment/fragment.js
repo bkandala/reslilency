@@ -1,7 +1,7 @@
 import * as source from '../../fragment/fragment.js';
 
-const decorate = source.default || (async () => {});
+// fragment exposes loadFragment for auto-blocking in scripts.js
 const { loadFragment } = source;
 
 export { loadFragment };
-export default decorate;
+export default source.default;

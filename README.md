@@ -35,9 +35,9 @@ npm run lint
 
 ## Block namespaces
 
-- Shared/reusable blocks are available under `/blocks/foundation/{block-name}`.
-- Team-specific overrides can be added under `/blocks/{team-name}/{block-name}`.
-- A block authored as `{team-name}-{block-name}` resolves in this order:
-  1. `/blocks/{team-name}/{block-name}/{block-name}.{js|css}`
-  2. `/blocks/foundation/{block-name}/{block-name}.{js|css}`
-  3. `/blocks/{block-name}/{block-name}.{js|css}` (legacy compatibility)
+- Shared/reusable blocks are available under `/blocks/foundation/<block-name>`.
+- Team-specific overrides can be added under `/blocks/<team-name>/<block-name>`.
+- A block authored as `<team-name>-<block-name>` resolves in this order:
+  1. `/blocks/<team-name>/<block-name>/<block-name>.{js|css}`
+  2. `/blocks/foundation/<block-name>/<block-name>.{js|css}`
+  3. `/blocks/<block-name>/<block-name>.{js|css}` (legacy compatibility)
