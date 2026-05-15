@@ -532,13 +532,14 @@ async function loadBlock(block) {
   if (status !== 'loading' && status !== 'loaded') {
     block.dataset.blockStatus = 'loading';
     const { blockName } = block.dataset;
+    const blockPath = blockName === 'region-picker' ? 'fallback' : blockName;
     try {
-      const cssLoaded = loadCSS(`${window.hlx.codeBasePath}/blocks/${blockName}/${blockName}.css`);
+      const cssLoaded = loadCSS(`${window.hlx.codeBasePath}/blocks/${blockPath}/${blockName}.css`);
       const decorationComplete = new Promise((resolve) => {
         (async () => {
           try {
             const mod = await import(
-              `${window.hlx.codeBasePath}/blocks/${blockName}/${blockName}.js`
+              `${window.hlx.codeBasePath}/blocks/${blockPath}/${blockName}.js`
             );
             if (mod.default) {
               await mod.default(block);
