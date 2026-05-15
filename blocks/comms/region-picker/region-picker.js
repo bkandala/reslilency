@@ -5,6 +5,11 @@ function toOptionValue(label) {
   return normalized || label;
 }
 
+/**
+ * Parses an option token authored as `Label|value` or `Label`.
+ * @param {string} token option token
+ * @returns {{label: string, value: string}|null} parsed option or null
+ */
 function parseOptionToken(token) {
   const [labelPart, valuePart] = token.split('|').map((part) => part.trim());
   if (!labelPart) return null;
@@ -22,7 +27,7 @@ function splitTokens(value) {
 }
 
 function normalizeKey(row) {
-  return toClassName(row.key || row.name || row.setting || row.title || '');
+  return toClassName(row.key || row.name || '');
 }
 
 function extractOptions(rows, optionsKey) {
@@ -34,7 +39,7 @@ function extractOptions(rows, optionsKey) {
         value: String(row.value).trim() || toOptionValue(String(row.label).trim()),
       }];
     }
-    return splitTokens(row.options || row.values || row.value)
+    return splitTokens(row.value)
       .map(parseOptionToken)
       .filter(Boolean);
   });
@@ -55,9 +60,13 @@ async function getSiteConfigRows() {
   return Array.isArray(payload.data) ? payload.data : [];
 }
 
+/**
+ * Loads and decorates the region picker block.
+ * @param {Element} block The block element
+ */
 export default async function decorate(block) {
   const config = readBlockConfig(block);
-  const siteConfigKey = toClassName(config['options-key'] || config.options || config.key || 'regions');
+  const siteConfigKey = toClassName(config['options-key'] || 'regions');
   const labelText = String(config.label || 'Region');
   const placeholderText = String(config.placeholder || 'Select a region');
 
@@ -93,9 +102,9 @@ export default async function decorate(block) {
     if (!options.length) {
       select.disabled = true;
     }
-  } catch (e) {
+  } catch (error) {
     // eslint-disable-next-line no-console
-    console.error('Region picker could not load options from site-config', e);
+    console.error('Region picker could not load options from site-config', error);
     select.disabled = true;
   }
 
