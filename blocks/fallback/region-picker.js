@@ -47,7 +47,7 @@ export default async function decorate(block) {
   );
   pickerCount += 1;
   const id = `region-picker-select-${
-    window.crypto?.randomUUID?.() || `fallback-${pickerCount}`
+    window.crypto?.randomUUID?.() || `${pickerCount}-${Math.random().toString(16).slice(2, 10)}`
   }`;
 
   const wrapper = document.createElement('div');
