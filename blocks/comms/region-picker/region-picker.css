@@ -23,3 +23,7 @@
   opacity: 0.65;
   cursor: not-allowed;
 }
+
+.region-picker .region-picker-fragment {
+  margin-top: 24px;
+}

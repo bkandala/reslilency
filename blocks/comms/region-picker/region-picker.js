@@ -1,4 +1,5 @@
 import { readBlockConfig, toClassName } from '../../../scripts/aem.js';
+import { loadFragment } from '../../fragment/fragment.js';
 
 function toOptionValue(label) {
   return toClassName(label);
@@ -29,19 +30,28 @@ function normalizeKey(row) {
   return toClassName(row.key || row.name || '');
 }
 
+function normalizePath(value) {
+  const path = String(value || '').trim();
+  if (!path) return '';
+  return path.startsWith('/') ? path : `/${path}`;
+}
+
 function extractOptions(rows, optionsKey) {
   const matchingRows = rows.filter((row) => normalizeKey(row) === optionsKey);
   const options = matchingRows.flatMap((row) => {
     const hasLabel = row.label !== undefined && row.label !== null;
     const hasValue = row.value !== undefined && row.value !== null;
+    const path = normalizePath(row.path);
     if (hasLabel && hasValue) {
       return [{
         label: String(row.label).trim(),
         value: String(row.value).trim(),
+        path,
       }];
     }
     return splitTokens(row.value)
       .map(parseOptionToken)
+      .map((option) => ({ ...option, path }))
       .filter(Boolean);
   });
 
@@ -83,11 +93,42 @@ export default async function decorate(block) {
   select.name = siteConfigKey;
   select.setAttribute('aria-label', labelText);
 
+  const fragmentContainer = document.createElement('div');
+  fragmentContainer.className = 'region-picker-fragment';
+
   const placeholderOption = document.createElement('option');
   placeholderOption.value = '';
   placeholderOption.textContent = placeholderText;
   placeholderOption.selected = true;
   select.append(placeholderOption);
+
+  let loadId = 0;
+  const loadSelectionFragment = async () => {
+    const selectedPath = normalizePath(select.selectedOptions[0]?.dataset.path);
+    const currentLoadId = loadId + 1;
+    loadId = currentLoadId;
+
+    if (!selectedPath) {
+      fragmentContainer.replaceChildren();
+      return;
+    }
+
+    try {
+      const fragment = await loadFragment(selectedPath);
+      if (currentLoadId !== loadId) return;
+
+      if (fragment) {
+        fragmentContainer.replaceChildren(...fragment.childNodes);
+      } else {
+        fragmentContainer.replaceChildren();
+      }
+    } catch (error) {
+      if (currentLoadId !== loadId) return;
+      // eslint-disable-next-line no-console
+      console.error(`Region picker failed to load fragment: ${selectedPath}`, error);
+      fragmentContainer.replaceChildren();
+    }
+  };
 
   try {
     const rows = await getSiteConfigRows();
@@ -97,6 +138,7 @@ export default async function decorate(block) {
       const option = document.createElement('option');
       option.value = entry.value;
       option.textContent = entry.label;
+      if (entry.path) option.dataset.path = entry.path;
       select.append(option);
     });
 
@@ -109,7 +151,9 @@ export default async function decorate(block) {
     select.disabled = true;
   }
 
+  select.addEventListener('change', loadSelectionFragment);
   label.append(select);
   wrapper.append(label);
+  wrapper.append(fragmentContainer);
   block.replaceChildren(wrapper);
 }
