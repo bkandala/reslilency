@@ -104,9 +104,9 @@ export default async function decorate(block) {
 
   let loadId = 0;
   const loadSelectionFragment = async () => {
-    const selectedPath = normalizePath(select.selectedOptions[0]?.dataset.path);
-    const currentLoadId = loadId + 1;
-    loadId = currentLoadId;
+    const selectedPath = normalizePath(select.selectedOptions?.[0]?.dataset?.path);
+    loadId += 1;
+    const currentLoadId = loadId;
 
     if (!selectedPath) {
       fragmentContainer.replaceChildren();
@@ -138,7 +138,7 @@ export default async function decorate(block) {
       const option = document.createElement('option');
       option.value = entry.value;
       option.textContent = entry.label;
-      if (entry.path) option.dataset.path = entry.path;
+      option.dataset.path = entry.path;
       select.append(option);
     });
 
