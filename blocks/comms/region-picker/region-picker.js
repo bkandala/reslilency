@@ -117,7 +117,7 @@ export default async function decorate(block) {
     try {
       const fragment = await loadFragment(fragmentPath);
       if (fragment) {
-        content.replaceChildren(...fragment.childNodes);
+        content.replaceChildren(...Array.from(fragment.childNodes));
         return;
       }
       // eslint-disable-next-line no-console
@@ -131,7 +131,7 @@ export default async function decorate(block) {
 
   const onSelectionChange = async () => {
     const selectedOption = select.selectedOptions[0];
-    if (!selectedOption || !selectedOption.dataset.path) {
+    if (!selectedOption || selectedOption.value === '' || !selectedOption.dataset.path) {
       clearContent();
       return;
     }
