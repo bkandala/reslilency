@@ -64,6 +64,8 @@ function normalizePath(pathValue) {
   try {
     return new URL(path, window.location.origin).pathname;
   } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn('Region picker received an invalid fragment path', path);
     return '';
   }
 }
@@ -104,20 +106,36 @@ export default async function decorate(block) {
   select.append(placeholderOption);
   const content = document.createElement('div');
   content.className = 'region-picker-content';
+  const clearContent = () => content.replaceChildren();
 
   const loadSelectedFragment = async (path) => {
     const fragmentPath = normalizePath(path);
     if (!fragmentPath) {
-      content.replaceChildren();
+      clearContent();
       return;
     }
+    try {
+      const fragment = await loadFragment(fragmentPath);
+      if (fragment) {
+        content.replaceChildren(...fragment.childNodes);
+        return;
+      }
+      // eslint-disable-next-line no-console
+      console.warn('Region picker could not load fragment content', fragmentPath);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Region picker failed to load selected fragment', error);
+    }
+    clearContent();
+  };
 
-    const fragment = await loadFragment(fragmentPath);
-    if (fragment) {
-      content.replaceChildren(...fragment.childNodes);
+  const onSelectionChange = async () => {
+    const selectedOption = select.selectedOptions[0];
+    if (!selectedOption || !selectedOption.dataset.path) {
+      clearContent();
       return;
     }
-    content.replaceChildren();
+    await loadSelectedFragment(selectedOption.dataset.path);
   };
 
   try {
@@ -141,10 +159,7 @@ export default async function decorate(block) {
     select.disabled = true;
   }
 
-  select.addEventListener('change', async () => {
-    const selectedOption = select.selectedOptions[0];
-    await loadSelectedFragment(selectedOption?.dataset?.path);
-  });
+  select.addEventListener('change', onSelectionChange);
 
   label.append(select);
   wrapper.append(label);
