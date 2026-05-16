@@ -104,7 +104,8 @@ export default async function decorate(block) {
 
   let loadId = 0;
   const loadSelectionFragment = async () => {
-    const selectedPath = normalizePath(select.selectedOptions?.[0]?.dataset?.path);
+    const selectedOption = select.selectedOptions.length > 0 ? select.selectedOptions[0] : null;
+    const selectedPath = normalizePath(selectedOption?.dataset?.path);
     loadId += 1;
     const currentLoadId = loadId;
 
@@ -118,7 +119,7 @@ export default async function decorate(block) {
       if (currentLoadId !== loadId) return;
 
       if (fragment) {
-        fragmentContainer.replaceChildren(...fragment.childNodes);
+        fragmentContainer.replaceChildren(...Array.from(fragment.childNodes));
       } else {
         fragmentContainer.replaceChildren();
       }
