@@ -131,7 +131,7 @@ export default async function decorate(block) {
 
   const onSelectionChange = async () => {
     const selectedOption = select.selectedOptions[0];
-    if (!selectedOption || selectedOption.value === '' || !selectedOption.dataset.path) {
+    if (!selectedOption || selectedOption.value === '') {
       clearContent();
       return;
     }
