@@ -55,7 +55,7 @@ function extractOptions(rows, optionsKey) {
 }
 
 async function getSiteConfigRows() {
-  const response = await fetch('/bkandala/reslilency/region.json');
+  const response = await fetch('/config/regions.json');
   if (!response.ok) throw new Error(`Failed to fetch site configuration (status: ${response.status})`);
   const payload = await response.json();
   return Array.isArray(payload.data) ? payload.data : [];
