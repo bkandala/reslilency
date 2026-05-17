@@ -11,6 +11,12 @@ import {
 
 const DEFAULT_FOUNDATION_FOLDER = 'foundation';
 const BLOCK_FOLDER_MAPPINGS = {
+  'cards':['foundation'],
+  'columns':['foundation'],
+  'footer':['foundation'],
+  'fragment':['foundation'],
+  'header':['foundation'],
+  'hero':['foundation'],
   'region-picker': ['comms'],
 };
 
