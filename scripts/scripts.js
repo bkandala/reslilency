@@ -118,7 +118,7 @@ async function importResolvedBlockModule(blockName) {
     }
   }
 
-  const attemptedPaths = assetCandidates.map((candidate) => candidate.path).join(', ');
+  const attemptedPaths = assetCandidates.map((candidate) => candidate.js).join(', ');
   throw fallbackError || new Error(`failed to resolve module for ${blockName}; attempted: ${attemptedPaths}`);
 }
 
@@ -304,8 +304,8 @@ function buildAutoBlocks(main) {
     // auto load `*/fragments/*` references
     const fragments = [...main.querySelectorAll('a[href*="/fragments/"]')].filter((f) => !f.closest('.fragment'));
     if (fragments.length > 0) {
-      importResolvedBlockModule('fragment').then(({ loadFragment }) => {
-        Promise.all(fragments.map(async (fragment) => {
+      importResolvedBlockModule('fragment').then(async ({ loadFragment }) => {
+        await Promise.all(fragments.map(async (fragment) => {
           try {
             const { pathname } = new URL(fragment.href);
             const frag = await loadFragment(pathname);
