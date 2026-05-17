@@ -17,28 +17,12 @@ const BLOCK_FOLDER_MAPPINGS = {
 };
 
 /**
- * Sanitizes folder names used in block resolution.
- * Allows only lowercase letters, numbers, and hyphens to keep paths safe.
- * @param {string} name folder name candidate
- * @returns {string} safe folder name
- */
-function toFolderName(name) {
-  if (typeof name !== 'string') return '';
-  const normalizedName = name.trim().toLowerCase();
-  if (normalizedName.includes('..') || normalizedName.startsWith('/')) return '';
-  return /^[a-z][0-9a-z-]*$/.test(normalizedName) ? normalizedName : '';
-}
-
-/**
  * Returns mapped folders for a block.
  * @param {string} blockName The block name
- * @returns {Array<string>} mapped block folders
+ * @returns {Array<string>} mapped block folders, or an empty array when no mapping exists
  */
 function getMappedBlockFolders(blockName) {
-  const configuredFolders = BLOCK_FOLDER_MAPPINGS[blockName] || [];
-  return configuredFolders
-    .map(toFolderName)
-    .filter((folder) => folder !== DEFAULT_FOUNDATION_FOLDER);
+  return BLOCK_FOLDER_MAPPINGS[blockName] || [];
 }
 
 /**
