@@ -60,12 +60,14 @@ function getBlockFolders() {
  */
 function getMappedBlockReference(blockName) {
   if (typeof blockName !== 'string') return null;
-  const parts = blockName.split('/').map((part) => toFolderName(part)).filter(Boolean);
-  if (parts.length !== 2) return null;
-  const namespace = parts[0];
+  const rawParts = blockName.split('/');
+  if (rawParts.length !== 2) return null;
+  const namespace = toFolderName(rawParts[0]);
+  const name = toFolderName(rawParts[1]);
+  if (!namespace || !name) return null;
   const mappedFolder = BLOCK_FOLDER_MAPPING[namespace];
   if (!mappedFolder) return null;
-  return { namespace: mappedFolder, name: parts[parts.length - 1] };
+  return { namespace: mappedFolder, name };
 }
 
 /**
