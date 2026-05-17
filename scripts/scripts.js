@@ -32,7 +32,7 @@ function toFolderName(name) {
 }
 
 /**
- * Resolves optional namespace + block name from authored block reference.
+ * Resolves a strict namespace/block-name authored block reference.
  * @param {string} blockName authored block name
  * @returns {{namespace: string, name: string}|null} parsed block reference
  */
@@ -50,6 +50,7 @@ function getMappedBlockReference(blockName) {
 
 /**
  * Returns block asset candidates for namespace-based block layouts.
+ * Returns an empty list when the authored block name is not a valid mapped namespace/block pair.
  * @param {string} blockName The block name
  * @returns {Array} list of js/css candidates
  */
@@ -77,7 +78,7 @@ function getBlockAssetCandidates(blockName) {
 }
 
 /**
- * Loads JS and CSS for a block with fallback support.
+ * Loads JS and CSS for a block using namespace-based resolution.
  * @param {Element} block The block element
  * @returns {Promise<Element>} loaded block
  */

@@ -42,4 +42,4 @@ npm run lint
   - `foundation/*` -> `/blocks/foundation/<block-name>/<block-name>.{js|css}`
   - `comms/*` -> `/blocks/comms/<block-name>/<block-name>.{js|css}`
   - `comm/*` -> `/blocks/comms/<block-name>/<block-name>.{js|css}` (compatibility alias)
-- Non-namespaced block names are no longer resolved.
+- Non-namespaced block names are no longer resolved and will fail to load with a console error.
