@@ -3,7 +3,6 @@ import {
   loadHeader,
   loadFooter,
   sampleRUM,
-  getMetadata,
   decorateIcons,
   decorateSections,
   decorateBlocks,
@@ -13,6 +12,9 @@ import {
 } from './aem.js';
 
 const DEFAULT_FOUNDATION_FOLDER = 'foundation';
+const BLOCK_FOLDER_MAPPINGS = {
+  'region-picker': ['comms'],
+};
 
 /**
  * Sanitizes folder names used in block resolution.
@@ -28,23 +30,17 @@ function toFolderName(name) {
 }
 
 /**
- * Returns folder list to resolve blocks from.
- * @returns {Array<string>} configured block folders
+ * Returns mapped folders for a block.
+ * @param {string} blockName The block name
+ * @returns {Array<string>} mapped block folders
  */
-function getBlockFolders() {
-  const configuredFolders = (Array.isArray(window.hlx?.blockFolders) ? window.hlx.blockFolders : ['comms'])
+function getMappedBlockFolders(blockName) {
+  const configuredFolders = Array.isArray(BLOCK_FOLDER_MAPPINGS[blockName])
+    ? BLOCK_FOLDER_MAPPINGS[blockName]
+    : [];
+  return configuredFolders
     .map(toFolderName)
-    .filter(Boolean);
-  const metadataFolders = (getMetadata('block-folders') || '')
-    .split(',')
-    .map((folder) => toFolderName(folder))
-    .filter(Boolean);
-
-  // keep foundation as the final fallback, regardless of configuration order
-  const orderedFolders = [...configuredFolders, ...metadataFolders]
     .filter((folder) => folder !== DEFAULT_FOUNDATION_FOLDER);
-  orderedFolders.push(DEFAULT_FOUNDATION_FOLDER);
-  return [...new Set(orderedFolders)];
 }
 
 /**
@@ -64,7 +60,8 @@ function getBlockAssetCandidates(blockName) {
     }
   };
 
-  getBlockFolders().forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
+  getMappedBlockFolders(blockName).forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
+  addCandidate(`${DEFAULT_FOUNDATION_FOLDER}/${blockName}/${blockName}`);
   addCandidate(`${blockName}/${blockName}`);
 
   return candidates;
