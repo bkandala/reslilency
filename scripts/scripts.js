@@ -1,7 +1,5 @@
 import {
   buildBlock,
-  loadHeader,
-  loadFooter,
   sampleRUM,
   decorateIcons,
   decorateSections,
@@ -21,12 +19,11 @@ const SUPPORTED_BLOCK_NAMESPACES = [...new Set(Object.values(BLOCK_FOLDER_MAPPIN
 const BLOCK_NAMESPACE_ERROR_SUFFIX = '\'comm\' is accepted as an alias for \'comms\'.';
 
 /**
- * Sanitizes folder names used in block resolution.
- * Allows only lowercase letters, numbers, and hyphens to keep paths safe.
- * @param {string} name folder name candidate
- * @returns {string} safe folder name
+ * Sanitizes authored block names used in map keys.
+ * @param {string} name block name candidate
+ * @returns {string} safe block name
  */
-function toFolderName(name) {
+function toBlockName(name) {
   if (typeof name !== 'string') return '';
   const normalizedName = name.trim().toLowerCase();
   if (normalizedName.includes('..') || normalizedName.startsWith('/')) return '';
@@ -59,6 +56,12 @@ function getMappedBlockReference(blockName) {
  */
 function getBlockAssetCandidates(blockName) {
   const candidates = [];
+  const safeBlockName = toBlockName(blockName);
+  if (!safeBlockName) {
+    // eslint-disable-next-line no-console
+    console.warn('Skipping block resolution for invalid block name', blockName);
+    return candidates;
+  }
   const addCandidate = (path) => {
     if (!candidates.find((candidate) => candidate.path === path)) {
       candidates.push({
@@ -166,6 +169,20 @@ async function loadSectionWithFallback(section, loadCallback) {
 }
 
 /**
+ * Loads a named block into a target element.
+ * @param {Element} target target element
+ * @param {string} blockName block name
+ * @returns {Promise<void>}
+ */
+async function loadNamedBlock(target, blockName) {
+  if (!target) return;
+  const block = buildBlock(blockName, '');
+  target.append(block);
+  decorateBlock(block);
+  await loadBlock(block);
+}
+
+/**
  * Loads all sections.
  * @param {Element} element parent element of sections
  */
@@ -221,7 +238,7 @@ function buildAutoBlocks(main) {
     const fragments = [...main.querySelectorAll('a[href*="/fragments/"]')].filter((f) => !f.closest('.fragment'));
     if (fragments.length > 0) {
       // eslint-disable-next-line import/no-cycle
-      import('../blocks/fragment/fragment.js').then(({ loadFragment }) => {
+      import('../blocks/foundation/fragment/fragment.js').then(({ loadFragment }) => {
         fragments.forEach(async (fragment) => {
           try {
             const { pathname } = new URL(fragment.href);
@@ -323,7 +340,7 @@ async function loadEager(doc) {
  * @param {Element} doc The container element
  */
 async function loadLazy(doc) {
-  loadHeader(doc.querySelector('header'));
+  loadNamedBlock(doc.querySelector('header'), 'header');
 
   const main = doc.querySelector('main');
   await loadSectionsWithFallback(main);
@@ -332,7 +349,7 @@ async function loadLazy(doc) {
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
   if (hash && element) element.scrollIntoView();
 
-  loadFooter(doc.querySelector('footer'));
+  loadNamedBlock(doc.querySelector('footer'), 'footer');
 
   loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
   loadFonts();
