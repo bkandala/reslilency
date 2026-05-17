@@ -131,7 +131,7 @@ async function loadSectionWithFallback(section, loadCallback) {
  * @param {string} blockName block name
  * @returns {Promise<void>}
  */
-async function loadNamedBlockWithFallback(target, blockName) {
+async function loadNamedBlock(target, blockName) {
   if (!target) return;
   const block = buildBlock(blockName, '');
   target.append(block);
@@ -297,7 +297,7 @@ async function loadEager(doc) {
  * @param {Element} doc The container element
  */
 async function loadLazy(doc) {
-  loadNamedBlockWithFallback(doc.querySelector('header'), 'header');
+  loadNamedBlock(doc.querySelector('header'), 'header');
 
   const main = doc.querySelector('main');
   await loadSectionsWithFallback(main);
@@ -306,7 +306,7 @@ async function loadLazy(doc) {
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
   if (hash && element) element.scrollIntoView();
 
-  loadNamedBlockWithFallback(doc.querySelector('footer'), 'footer');
+  loadNamedBlock(doc.querySelector('footer'), 'footer');
 
   loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
   loadFonts();
