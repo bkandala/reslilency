@@ -9,43 +9,18 @@ import {
   loadCSS,
 } from './aem.js';
 
-const BLOCK_FOLDER_MAPPING = {
-  foundation: 'foundation',
-  comms: 'comms',
-  // Alias for "comms" to support alternative namespace usage.
-  comm: 'comms',
+const DEFAULT_FOUNDATION_FOLDER = 'foundation';
+const BLOCK_FOLDER_MAPPINGS = {
+  'region-picker': ['comms'],
 };
-const SUPPORTED_BLOCK_NAMESPACES = [...new Set(Object.values(BLOCK_FOLDER_MAPPING))].sort();
-const BLOCK_NAMESPACE_ERROR_SUFFIX = '\'comm\' is accepted as an alias for \'comms\'.';
 
 /**
- * Sanitizes authored block names used in map keys.
- * @param {string} name block name candidate
- * @returns {string} safe block name
+ * Returns mapped folders for a block.
+ * @param {string} blockName The block name
+ * @returns {Array<string>} mapped block folders, or an empty array when no mapping exists
  */
-function toBlockName(name) {
-  if (typeof name !== 'string') return '';
-  const normalizedName = name.trim().toLowerCase();
-  if (normalizedName.includes('..') || normalizedName.startsWith('/')) return '';
-  return /^[a-z][0-9a-z-]*$/.test(normalizedName) ? normalizedName : '';
-}
-
-/**
- * Resolves a strict namespace/block-name authored block reference.
- * Deeper paths such as namespace/block/variant are intentionally rejected.
- * @param {string} blockName authored block name
- * @returns {{namespace: string, name: string}|null} parsed block reference
- */
-function getMappedBlockReference(blockName) {
-  if (typeof blockName !== 'string') return null;
-  const rawParts = blockName.split('/');
-  if (rawParts.length !== 2) return null;
-  const namespace = toFolderName(rawParts[0]);
-  const name = toFolderName(rawParts[1]);
-  if (!namespace || !name) return null;
-  const mappedFolder = BLOCK_FOLDER_MAPPING[namespace];
-  if (!mappedFolder) return null;
-  return { namespace: mappedFolder, name };
+function getMappedBlockFolders(blockName) {
+  return BLOCK_FOLDER_MAPPINGS[blockName] || [];
 }
 
 /**
@@ -72,13 +47,9 @@ function getBlockAssetCandidates(blockName) {
     }
   };
 
-  const mappedBlock = getMappedBlockReference(blockName);
-  if (mappedBlock) {
-    // AEM block convention is /blocks/<folder>/<block-name>/<block-name>.{js|css}
-    addCandidate(`${mappedBlock.namespace}/${mappedBlock.name}/${mappedBlock.name}`);
-    // Namespaced references resolve only through their mapped folder to avoid extra 404 probes.
-    return candidates;
-  }
+  getMappedBlockFolders(blockName).forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
+  addCandidate(`${DEFAULT_FOUNDATION_FOLDER}/${blockName}/${blockName}`);
+  addCandidate(`${blockName}/${blockName}`);
 
   // Return empty list when the block name is not a valid mapped namespace/block pair.
   return candidates;

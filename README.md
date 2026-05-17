@@ -37,10 +37,9 @@ npm run lint
 
 - Shared/reusable blocks are available under `/blocks/foundation/<block-name>`.
 - Team blocks can live in dedicated folders under `/blocks/<team-folder>/...` (for example as git submodules).
-- Authored block names must include a namespace (for example `foundation/hero`, `comms/region-picker`).
-- Supported namespace mappings are:
-  - `foundation/*` -> `/blocks/foundation/<block-name>/<block-name>.{js|css}`
-  - `comms/*` -> `/blocks/comms/<block-name>/<block-name>.{js|css}`
-  - `comm/*` -> `/blocks/comms/<block-name>/<block-name>.{js|css}` (compatibility alias)
-- Non-namespaced block names are no longer resolved and will fail to load with a console error.
-  - Example: `Block "hero" must use the supported namespace/block-name format. Supported namespaces: foundation, comms ("comm" is accepted as an alias for "comms").`
+- Keep authored block names unchanged (for example `hero`, `cards`, `columns`) and map namespaced blocks in `/scripts/scripts.js`.
+- When you add a new namespaced block, update `BLOCK_FOLDER_MAPPINGS` in `/scripts/scripts.js`.
+- Block resolution order for an authored `<block-name>` is:
+  1. `/blocks/<mapped-folder>/<block-name>/<block-name>.{js|css}` (from `BLOCK_FOLDER_MAPPINGS` in `/scripts/scripts.js`)
+  2. `/blocks/foundation/<block-name>/<block-name>.{js|css}`
+  3. `/blocks/<block-name>/<block-name>.{js|css}` (legacy compatibility)
