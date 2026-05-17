@@ -13,6 +13,11 @@ import {
 } from './aem.js';
 
 const DEFAULT_FOUNDATION_FOLDER = 'foundation';
+const BLOCK_FOLDER_MAPPING = {
+  foundation: 'foundation',
+  comms: 'comms',
+  comm: 'comms',
+};
 
 /**
  * Sanitizes folder names used in block resolution.
@@ -48,6 +53,21 @@ function getBlockFolders() {
 }
 
 /**
+ * Resolves optional namespace + block name from authored block reference.
+ * @param {string} blockName authored block name
+ * @returns {{namespace: string, name: string}|null} parsed block reference
+ */
+function getMappedBlockReference(blockName) {
+  if (typeof blockName !== 'string') return null;
+  const parts = blockName.split('/').map((part) => toFolderName(part)).filter(Boolean);
+  if (parts.length < 2) return null;
+  const namespace = parts[0];
+  const mappedFolder = BLOCK_FOLDER_MAPPING[namespace];
+  if (!mappedFolder) return null;
+  return { namespace: mappedFolder, name: parts[parts.length - 1] };
+}
+
+/**
  * Returns block asset candidates for folder-based and legacy block layouts.
  * @param {string} blockName The block name
  * @returns {Array} list of js/css candidates
@@ -63,6 +83,13 @@ function getBlockAssetCandidates(blockName) {
       });
     }
   };
+
+  const mappedBlock = getMappedBlockReference(blockName);
+  if (mappedBlock) {
+    addCandidate(`${mappedBlock.namespace}/${mappedBlock.name}/${mappedBlock.name}`);
+    addCandidate(`${mappedBlock.name}/${mappedBlock.name}`);
+    return candidates;
+  }
 
   getBlockFolders().forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
   addCandidate(`${blockName}/${blockName}`);
