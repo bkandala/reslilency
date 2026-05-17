@@ -106,7 +106,11 @@ function getBlockFolderMap() {
 function getBlockAssetCandidates(blockName) {
   const candidates = [];
   const safeBlockName = toBlockName(blockName);
-  if (!safeBlockName) return candidates;
+  if (!safeBlockName) {
+    // eslint-disable-next-line no-console
+    console.warn('Skipping block resolution for invalid block name', blockName);
+    return candidates;
+  }
   const addCandidate = (path) => {
     if (!candidates.find((candidate) => candidate.path === path)) {
       candidates.push({
