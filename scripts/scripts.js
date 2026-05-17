@@ -87,7 +87,6 @@ function getBlockAssetCandidates(blockName) {
   const mappedBlock = getMappedBlockReference(blockName);
   if (mappedBlock) {
     addCandidate(`${mappedBlock.namespace}/${mappedBlock.name}/${mappedBlock.name}`);
-    addCandidate(`${mappedBlock.name}/${mappedBlock.name}`);
     return candidates;
   }
 
