@@ -118,7 +118,8 @@ async function importResolvedBlockModule(blockName) {
     }
   }
 
-  throw fallbackError || new Error(`failed to resolve module for ${blockName}`);
+  const attemptedPaths = assetCandidates.map((candidate) => candidate.path).join(', ');
+  throw fallbackError || new Error(`failed to resolve module for ${blockName}; attempted: ${attemptedPaths}`);
 }
 
 /**
@@ -187,7 +188,7 @@ async function loadBlock(block) {
  * Initializes a synthetic block before loading it.
  * @param {Element} block The block element
  */
-function initializeSyntheticBlock(block) {
+function initializeDynamicBlock(block) {
   const shortBlockName = block.classList[0];
   if (shortBlockName) {
     block.classList.add('block');
@@ -206,7 +207,7 @@ function initializeSyntheticBlock(block) {
 async function loadNamedBlock(container, blockName) {
   const block = buildBlock(blockName, '');
   container.append(block);
-  initializeSyntheticBlock(block);
+  initializeDynamicBlock(block);
   return loadBlock(block);
 }
 
@@ -304,7 +305,7 @@ function buildAutoBlocks(main) {
     const fragments = [...main.querySelectorAll('a[href*="/fragments/"]')].filter((f) => !f.closest('.fragment'));
     if (fragments.length > 0) {
       importResolvedBlockModule('fragment').then(({ loadFragment }) => {
-        fragments.forEach(async (fragment) => {
+        Promise.all(fragments.map(async (fragment) => {
           try {
             const { pathname } = new URL(fragment.href);
             const frag = await loadFragment(pathname);
@@ -313,7 +314,7 @@ function buildAutoBlocks(main) {
             // eslint-disable-next-line no-console
             console.error('Fragment loading failed', error);
           }
-        });
+        }));
       }).catch((error) => {
         // eslint-disable-next-line no-console
         console.error('Fragment module failed to load', error);
