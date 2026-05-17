@@ -16,6 +16,7 @@ const DEFAULT_FOUNDATION_FOLDER = 'foundation';
 const BLOCK_FOLDER_MAPPING = {
   foundation: 'foundation',
   comms: 'comms',
+  // Alias to tolerate legacy/abbreviated namespace usage.
   comm: 'comms',
 };
 
@@ -87,6 +88,7 @@ function getBlockAssetCandidates(blockName) {
   const mappedBlock = getMappedBlockReference(blockName);
   if (mappedBlock) {
     addCandidate(`${mappedBlock.namespace}/${mappedBlock.name}/${mappedBlock.name}`);
+    // Namespaced references resolve only through their mapped folder to avoid extra 404 probes.
     return candidates;
   }
 
