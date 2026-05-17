@@ -1,4 +1,5 @@
 import { readBlockConfig, toClassName } from '../../../scripts/aem.js';
+import { loadFragment } from '../../fragment/fragment.js';
 
 function toOptionValue(label) {
   return toClassName(label);
@@ -38,6 +39,7 @@ function extractOptions(rows, optionsKey) {
       return [{
         label: String(row.label).trim(),
         value: String(row.value).trim(),
+        path: String(row.path || '').trim(),
       }];
     }
     return splitTokens(row.value)
@@ -52,6 +54,20 @@ function extractOptions(rows, optionsKey) {
     uniqueValues.add(key);
     return true;
   });
+}
+
+function normalizePath(pathValue) {
+  if (!pathValue) return '';
+  const path = String(pathValue).trim();
+  if (!path) return '';
+
+  try {
+    return new URL(path, window.location.origin).pathname;
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn('Region picker received an invalid fragment path', path);
+    return '';
+  }
 }
 
 async function getSiteConfigRows() {
@@ -88,6 +104,39 @@ export default async function decorate(block) {
   placeholderOption.textContent = placeholderText;
   placeholderOption.selected = true;
   select.append(placeholderOption);
+  const content = document.createElement('div');
+  content.className = 'region-picker-content';
+  const clearContent = () => content.replaceChildren();
+
+  const loadSelectedFragment = async (path) => {
+    const fragmentPath = normalizePath(path);
+    if (!fragmentPath) {
+      clearContent();
+      return;
+    }
+    try {
+      const fragment = await loadFragment(fragmentPath);
+      if (fragment) {
+        content.replaceChildren(...Array.from(fragment.childNodes));
+        return;
+      }
+      // eslint-disable-next-line no-console
+      console.warn('Region picker could not load fragment content', fragmentPath);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Region picker failed to load selected fragment', error);
+    }
+    clearContent();
+  };
+
+  const onSelectionChange = async () => {
+    const selectedOption = select.selectedOptions[0];
+    if (!selectedOption || selectedOption.value === '') {
+      clearContent();
+      return;
+    }
+    await loadSelectedFragment(selectedOption.dataset.path);
+  };
 
   try {
     const rows = await getSiteConfigRows();
@@ -97,6 +146,7 @@ export default async function decorate(block) {
       const option = document.createElement('option');
       option.value = entry.value;
       option.textContent = entry.label;
+      if (entry.path) option.dataset.path = entry.path;
       select.append(option);
     });
 
@@ -109,7 +159,10 @@ export default async function decorate(block) {
     select.disabled = true;
   }
 
+  select.addEventListener('change', onSelectionChange);
+
   label.append(select);
   wrapper.append(label);
+  wrapper.append(content);
   block.replaceChildren(wrapper);
 }
