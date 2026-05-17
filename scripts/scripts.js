@@ -18,7 +18,7 @@ const BLOCK_FOLDER_MAPPING = {
   comm: 'comms',
 };
 const SUPPORTED_BLOCK_NAMESPACES = [...new Set(Object.values(BLOCK_FOLDER_MAPPING))].sort();
-const BLOCK_NAMESPACE_ERROR_SUFFIX = `"comm" is accepted as an alias for "comms".`;
+const BLOCK_NAMESPACE_ERROR_SUFFIX = '\'comm\' is accepted as an alias for \'comms\'.';
 
 /**
  * Sanitizes folder names used in block resolution.
