@@ -13,6 +13,9 @@ import {
 } from './aem.js';
 
 const DEFAULT_FOUNDATION_FOLDER = 'foundation';
+const DEFAULT_BLOCK_FOLDER_MAP = {
+  'region-picker': 'comms',
+};
 
 /**
  * Sanitizes folder names used in block resolution.
@@ -28,11 +31,23 @@ function toFolderName(name) {
 }
 
 /**
+ * Sanitizes authored block names used in map keys.
+ * @param {string} name block name candidate
+ * @returns {string} safe block name
+ */
+function toBlockName(name) {
+  if (typeof name !== 'string') return '';
+  const normalizedName = name.trim().toLowerCase();
+  if (normalizedName.includes('..') || normalizedName.startsWith('/')) return '';
+  return /^[a-z][0-9a-z-]*$/.test(normalizedName) ? normalizedName : '';
+}
+
+/**
  * Returns folder list to resolve blocks from.
  * @returns {Array<string>} configured block folders
  */
 function getBlockFolders() {
-  const configuredFolders = (Array.isArray(window.hlx?.blockFolders) ? window.hlx.blockFolders : ['comms'])
+  const configuredFolders = (Array.isArray(window.hlx?.blockFolders) ? window.hlx.blockFolders : [])
     .map(toFolderName)
     .filter(Boolean);
   const metadataFolders = (getMetadata('block-folders') || '')
@@ -48,12 +63,50 @@ function getBlockFolders() {
 }
 
 /**
+ * Returns explicit block to folder mapping from defaults, metadata and runtime config.
+ * @returns {Object<string, string>} blockName => folderName
+ */
+function getBlockFolderMap() {
+  const map = {};
+  const addMapping = (blockName, folderName) => {
+    const safeBlockName = toBlockName(blockName);
+    const safeFolderName = toFolderName(folderName);
+    if (safeBlockName && safeFolderName) {
+      map[safeBlockName] = safeFolderName;
+    }
+  };
+
+  Object.entries(DEFAULT_BLOCK_FOLDER_MAP).forEach(([blockName, folderName]) => {
+    addMapping(blockName, folderName);
+  });
+
+  const metadataMapping = (getMetadata('block-folder-map') || '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  metadataMapping.forEach((entry) => {
+    const [blockName, folderName] = entry.split(':').map((part) => part.trim());
+    addMapping(blockName, folderName);
+  });
+
+  if (window.hlx?.blockFolderMap && typeof window.hlx.blockFolderMap === 'object') {
+    Object.entries(window.hlx.blockFolderMap).forEach(([blockName, folderName]) => {
+      addMapping(blockName, folderName);
+    });
+  }
+
+  return map;
+}
+
+/**
  * Returns block asset candidates for folder-based and legacy block layouts.
  * @param {string} blockName The block name
  * @returns {Array} list of js/css candidates
  */
 function getBlockAssetCandidates(blockName) {
   const candidates = [];
+  const safeBlockName = toBlockName(blockName);
+  if (!safeBlockName) return candidates;
   const addCandidate = (path) => {
     if (!candidates.find((candidate) => candidate.path === path)) {
       candidates.push({
@@ -64,8 +117,15 @@ function getBlockAssetCandidates(blockName) {
     }
   };
 
-  getBlockFolders().forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
-  addCandidate(`${blockName}/${blockName}`);
+  const mappedFolder = getBlockFolderMap()[safeBlockName];
+  if (mappedFolder) {
+    addCandidate(`${mappedFolder}/${safeBlockName}/${safeBlockName}`);
+  }
+
+  getBlockFolders()
+    .filter((folder) => folder !== mappedFolder)
+    .forEach((folder) => addCandidate(`${folder}/${safeBlockName}/${safeBlockName}`));
+  addCandidate(`${safeBlockName}/${safeBlockName}`);
 
   return candidates;
 }
