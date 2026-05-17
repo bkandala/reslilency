@@ -14,9 +14,11 @@ import {
 const BLOCK_FOLDER_MAPPING = {
   foundation: 'foundation',
   comms: 'comms',
-  // Alias to support abbreviated namespace usage.
+  // Alias for "comms" to support alternative namespace usage.
   comm: 'comms',
 };
+const SUPPORTED_BLOCK_NAMESPACES = [...new Set(Object.values(BLOCK_FOLDER_MAPPING))].sort();
+const BLOCK_NAMESPACE_ERROR_SUFFIX = `"comm" is accepted as an alias for "comms".`;
 
 /**
  * Sanitizes folder names used in block resolution.
@@ -92,7 +94,7 @@ async function loadBlock(block) {
     const assetCandidates = getBlockAssetCandidates(blockName);
     let assetLoaded = false;
     let fallbackError = assetCandidates.length === 0
-      ? new Error(`Block "${blockName}" must use the supported namespace/block-name format. Supported namespaces: foundation, comms ("comm" is accepted as an alias for "comms").`)
+      ? new Error(`Block "${blockName}" must use the supported namespace/block-name format. Supported namespaces: ${SUPPORTED_BLOCK_NAMESPACES.join(', ')}. ${BLOCK_NAMESPACE_ERROR_SUFFIX}`)
       : undefined;
     let cssFound = false;
 
