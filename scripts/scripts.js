@@ -1,7 +1,5 @@
 import {
   buildBlock,
-  loadHeader,
-  loadFooter,
   sampleRUM,
   getMetadata,
   decorateIcons,
@@ -13,6 +11,15 @@ import {
 } from './aem.js';
 
 const DEFAULT_FOUNDATION_FOLDER = 'foundation';
+const DEFAULT_BLOCK_FOLDER_MAP = Object.freeze({
+  cards: DEFAULT_FOUNDATION_FOLDER,
+  columns: DEFAULT_FOUNDATION_FOLDER,
+  footer: DEFAULT_FOUNDATION_FOLDER,
+  fragment: DEFAULT_FOUNDATION_FOLDER,
+  header: DEFAULT_FOUNDATION_FOLDER,
+  hero: DEFAULT_FOUNDATION_FOLDER,
+  'region-picker': 'comms',
+});
 
 /**
  * Sanitizes folder names used in block resolution.
@@ -28,20 +35,43 @@ function toFolderName(name) {
 }
 
 /**
+ * Normalizes values to a list of safe folder names.
+ * @param {string|Array<string>} value configured folder value
+ * @returns {Array<string>} safe folder names
+ */
+function toFolderNames(value) {
+  const values = Array.isArray(value) ? value : [value];
+  return values.map(toFolderName).filter(Boolean);
+}
+
+/**
+ * Returns merged block-to-folder mappings.
+ * @returns {Object<string, Array<string>>} preferred folders by block name
+ */
+function getBlockFolderMap() {
+  const configuredMap = window.hlx?.blockFolderMap || {};
+  const mergedEntries = Object.entries({
+    ...DEFAULT_BLOCK_FOLDER_MAP,
+    ...configuredMap,
+  }).map(([blockName, folders]) => [blockName, toFolderNames(folders)]);
+  return Object.fromEntries(mergedEntries);
+}
+
+/**
  * Returns folder list to resolve blocks from.
+ * @param {string} blockName The block name
  * @returns {Array<string>} configured block folders
  */
-function getBlockFolders() {
-  const configuredFolders = (Array.isArray(window.hlx?.blockFolders) ? window.hlx.blockFolders : ['comms'])
-    .map(toFolderName)
-    .filter(Boolean);
+function getBlockFolders(blockName) {
+  const configuredFolders = toFolderNames(window.hlx?.blockFolders || []);
   const metadataFolders = (getMetadata('block-folders') || '')
     .split(',')
     .map((folder) => toFolderName(folder))
     .filter(Boolean);
+  const preferredFolders = getBlockFolderMap()[blockName] || [];
 
   // keep foundation as the final fallback, regardless of configuration order
-  const orderedFolders = [...configuredFolders, ...metadataFolders]
+  const orderedFolders = [...preferredFolders, ...configuredFolders, ...metadataFolders]
     .filter((folder) => folder !== DEFAULT_FOUNDATION_FOLDER);
   orderedFolders.push(DEFAULT_FOUNDATION_FOLDER);
   return [...new Set(orderedFolders)];
@@ -64,10 +94,31 @@ function getBlockAssetCandidates(blockName) {
     }
   };
 
-  getBlockFolders().forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
+  getBlockFolders(blockName).forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
   addCandidate(`${blockName}/${blockName}`);
 
   return candidates;
+}
+
+/**
+ * Resolves a block module from the configured block folders.
+ * @param {string} blockName The block name
+ * @returns {Promise<Object>} resolved block module
+ */
+async function importResolvedBlockModule(blockName) {
+  const assetCandidates = getBlockAssetCandidates(blockName);
+  let fallbackError;
+
+  for (let i = 0; i < assetCandidates.length; i += 1) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      return await import(assetCandidates[i].js);
+    } catch (error) {
+      fallbackError = error;
+    }
+  }
+
+  throw fallbackError || new Error(`failed to resolve module for ${blockName}`);
 }
 
 /**
@@ -130,6 +181,51 @@ async function loadBlock(block) {
     block.dataset.blockStatus = 'loaded';
   }
   return block;
+}
+
+/**
+ * Initializes a synthetic block before loading it.
+ * @param {Element} block The block element
+ */
+function initializeSyntheticBlock(block) {
+  const shortBlockName = block.classList[0];
+  if (shortBlockName) {
+    block.classList.add('block');
+    block.dataset.blockName = shortBlockName;
+    block.dataset.blockStatus = 'initialized';
+    block.parentElement?.classList.add(`${shortBlockName}-wrapper`);
+  }
+}
+
+/**
+ * Loads a named block into a container using folder-aware resolution.
+ * @param {Element} container The target element
+ * @param {string} blockName The block name
+ * @returns {Promise<Element>} loaded block
+ */
+async function loadNamedBlock(container, blockName) {
+  const block = buildBlock(blockName, '');
+  container.append(block);
+  initializeSyntheticBlock(block);
+  return loadBlock(block);
+}
+
+/**
+ * Loads a block named 'header' into header.
+ * @param {Element} header header element
+ * @returns {Promise<Element>} loaded block
+ */
+async function loadHeader(header) {
+  return loadNamedBlock(header, 'header');
+}
+
+/**
+ * Loads a block named 'footer' into footer.
+ * @param {Element} footer footer element
+ * @returns {Promise<Element>} loaded block
+ */
+async function loadFooter(footer) {
+  return loadNamedBlock(footer, 'footer');
 }
 
 /**
@@ -207,8 +303,7 @@ function buildAutoBlocks(main) {
     // auto load `*/fragments/*` references
     const fragments = [...main.querySelectorAll('a[href*="/fragments/"]')].filter((f) => !f.closest('.fragment'));
     if (fragments.length > 0) {
-      // eslint-disable-next-line import/no-cycle
-      import('../blocks/fragment/fragment.js').then(({ loadFragment }) => {
+      importResolvedBlockModule('fragment').then(({ loadFragment }) => {
         fragments.forEach(async (fragment) => {
           try {
             const { pathname } = new URL(fragment.href);
@@ -219,6 +314,9 @@ function buildAutoBlocks(main) {
             console.error('Fragment loading failed', error);
           }
         });
+      }).catch((error) => {
+        // eslint-disable-next-line no-console
+        console.error('Fragment module failed to load', error);
       });
     }
 
