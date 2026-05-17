@@ -61,7 +61,7 @@ function getBlockFolders() {
 function getMappedBlockReference(blockName) {
   if (typeof blockName !== 'string') return null;
   const parts = blockName.split('/').map((part) => toFolderName(part)).filter(Boolean);
-  if (parts.length < 2) return null;
+  if (parts.length !== 2) return null;
   const namespace = parts[0];
   const mappedFolder = BLOCK_FOLDER_MAPPING[namespace];
   if (!mappedFolder) return null;
@@ -87,6 +87,7 @@ function getBlockAssetCandidates(blockName) {
 
   const mappedBlock = getMappedBlockReference(blockName);
   if (mappedBlock) {
+    // AEM block convention is /blocks/<folder>/<block-name>/<block-name>.{js|css}
     addCandidate(`${mappedBlock.namespace}/${mappedBlock.name}/${mappedBlock.name}`);
     // Namespaced references resolve only through their mapped folder to avoid extra 404 probes.
     return candidates;
