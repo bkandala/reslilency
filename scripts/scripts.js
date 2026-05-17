@@ -28,6 +28,15 @@ function toFolderName(name) {
 }
 
 /**
+ * Sanitizes block names used in block resolution.
+ * @param {string} name block name candidate
+ * @returns {string} safe block name
+ */
+function toBlockName(name) {
+  return toFolderName(name);
+}
+
+/**
  * Returns folder list to resolve blocks from.
  * @returns {Array<string>} configured block folders
  */
@@ -54,6 +63,12 @@ function getBlockFolders() {
  */
 function getBlockAssetCandidates(blockName) {
   const candidates = [];
+  const safeBlockName = toBlockName(blockName);
+  if (!safeBlockName) {
+    // eslint-disable-next-line no-console
+    console.warn('Skipping block resolution for invalid block name', blockName);
+    return candidates;
+  }
   const addCandidate = (path) => {
     if (!candidates.find((candidate) => candidate.path === path)) {
       candidates.push({
@@ -64,8 +79,8 @@ function getBlockAssetCandidates(blockName) {
     }
   };
 
-  getBlockFolders().forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
-  addCandidate(`${blockName}/${blockName}`);
+  getBlockFolders().forEach((folder) => addCandidate(`${folder}/${safeBlockName}/${safeBlockName}`));
+  addCandidate(`${safeBlockName}/${safeBlockName}`);
 
   return candidates;
 }
