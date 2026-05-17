@@ -4,6 +4,7 @@ import {
   decorateIcons,
   decorateSections,
   decorateBlocks,
+  decorateBlock,
   decorateTemplateAndTheme,
   waitForFirstImage,
   loadCSS,
@@ -74,6 +75,21 @@ function getBlockFolders(blockName) {
     .filter((folder) => folder !== DEFAULT_FOUNDATION_FOLDER);
   orderedFolders.push(DEFAULT_FOUNDATION_FOLDER);
   return [...new Set(orderedFolders)];
+}
+
+const SUPPORTED_BLOCK_NAMESPACES = [...new Set(Object.values(DEFAULT_BLOCK_FOLDER_MAP))].sort();
+const BLOCK_NAMESPACE_ERROR_SUFFIX = `Supported namespaces: ${SUPPORTED_BLOCK_NAMESPACES.join(', ')}.`;
+
+/**
+ * Sanitizes a block name to a valid lowercase alphanumeric identifier.
+ * @param {string} name block name candidate
+ * @returns {string} safe block name, or empty string if invalid
+ */
+function toBlockName(name) {
+  if (typeof name !== 'string') return '';
+  const normalizedName = name.trim().toLowerCase();
+  if (normalizedName.includes('..') || normalizedName.startsWith('/')) return '';
+  return /^[a-z][0-9a-z-]*$/.test(normalizedName) ? normalizedName : '';
 }
 
 /**
