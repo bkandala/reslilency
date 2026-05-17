@@ -33,6 +33,7 @@ function toFolderName(name) {
 
 /**
  * Resolves a strict namespace/block-name authored block reference.
+ * Deeper paths such as namespace/block/variant are intentionally rejected.
  * @param {string} blockName authored block name
  * @returns {{namespace: string, name: string}|null} parsed block reference
  */
@@ -90,7 +91,7 @@ async function loadBlock(block) {
     const { blockName } = block.dataset;
     const assetCandidates = getBlockAssetCandidates(blockName);
     let assetLoaded = false;
-    let fallbackError = new Error(`Block "${blockName}" must use a mapped namespace (foundation, comms). Note: "comm" is supported as an alias for "comms".`);
+    let fallbackError = new Error(`Block "${blockName}" must use the supported namespace/block-name format. Supported namespaces: foundation, comms ("comm" is accepted as an alias for "comms").`);
     let cssFound = false;
 
     for (let i = 0; i < assetCandidates.length; i += 1) {
