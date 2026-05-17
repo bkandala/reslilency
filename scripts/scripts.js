@@ -74,7 +74,7 @@ function getBlockAssetCandidates(blockName) {
     return candidates;
   }
 
-  // Return empty list for invalid or non-namespaced block names.
+  // Return empty list when the block name is not a valid mapped namespace/block pair.
   return candidates;
 }
 
@@ -90,7 +90,7 @@ async function loadBlock(block) {
     const { blockName } = block.dataset;
     const assetCandidates = getBlockAssetCandidates(blockName);
     let assetLoaded = false;
-    let fallbackError = new Error(`Block "${blockName}" must use a mapped namespace (foundation, comms, comm).`);
+    let fallbackError = new Error(`Block "${blockName}" must use a mapped namespace (foundation, comms). Note: "comm" is supported as an alias for "comms".`);
     let cssFound = false;
 
     for (let i = 0; i < assetCandidates.length; i += 1) {
