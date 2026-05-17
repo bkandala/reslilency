@@ -14,7 +14,7 @@ import {
 const BLOCK_FOLDER_MAPPING = {
   foundation: 'foundation',
   comms: 'comms',
-  // Alias to support legacy/abbreviated namespace usage.
+  // Alias to support abbreviated namespace usage.
   comm: 'comms',
 };
 
@@ -91,7 +91,9 @@ async function loadBlock(block) {
     const { blockName } = block.dataset;
     const assetCandidates = getBlockAssetCandidates(blockName);
     let assetLoaded = false;
-    let fallbackError = new Error(`Block "${blockName}" must use the supported namespace/block-name format. Supported namespaces: foundation, comms ("comm" is accepted as an alias for "comms").`);
+    let fallbackError = assetCandidates.length === 0
+      ? new Error(`Block "${blockName}" must use the supported namespace/block-name format. Supported namespaces: foundation, comms ("comm" is accepted as an alias for "comms").`)
+      : undefined;
     let cssFound = false;
 
     for (let i = 0; i < assetCandidates.length; i += 1) {

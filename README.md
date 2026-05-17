@@ -43,3 +43,4 @@ npm run lint
   - `comms/*` -> `/blocks/comms/<block-name>/<block-name>.{js|css}`
   - `comm/*` -> `/blocks/comms/<block-name>/<block-name>.{js|css}` (compatibility alias)
 - Non-namespaced block names are no longer resolved and will fail to load with a console error.
+  - Example: `Block "hero" must use the supported namespace/block-name format. Supported namespaces: foundation, comms ("comm" is accepted as an alias for "comms").`
