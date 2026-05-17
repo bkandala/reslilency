@@ -14,7 +14,7 @@ import {
 const BLOCK_FOLDER_MAPPING = {
   foundation: 'foundation',
   comms: 'comms',
-  // Alias to tolerate legacy/abbreviated namespace usage.
+  // Alias to support legacy/abbreviated namespace usage.
   comm: 'comms',
 };
 
@@ -74,6 +74,7 @@ function getBlockAssetCandidates(blockName) {
     return candidates;
   }
 
+  // Return empty list for invalid or non-namespaced block names.
   return candidates;
 }
 
@@ -89,7 +90,7 @@ async function loadBlock(block) {
     const { blockName } = block.dataset;
     const assetCandidates = getBlockAssetCandidates(blockName);
     let assetLoaded = false;
-    let fallbackError = new Error(`Block "${blockName}" must use a mapped namespace.`);
+    let fallbackError = new Error(`Block "${blockName}" must use a mapped namespace (foundation, comms, comm).`);
     let cssFound = false;
 
     for (let i = 0; i < assetCandidates.length; i += 1) {
