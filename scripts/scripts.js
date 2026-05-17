@@ -35,9 +35,7 @@ function toFolderName(name) {
  * @returns {Array<string>} mapped block folders
  */
 function getMappedBlockFolders(blockName) {
-  const configuredFolders = Array.isArray(BLOCK_FOLDER_MAPPINGS[blockName])
-    ? BLOCK_FOLDER_MAPPINGS[blockName]
-    : [];
+  const configuredFolders = BLOCK_FOLDER_MAPPINGS[blockName] || [];
   return configuredFolders
     .map(toFolderName)
     .filter((folder) => folder !== DEFAULT_FOUNDATION_FOLDER);
