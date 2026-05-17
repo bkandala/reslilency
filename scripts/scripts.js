@@ -14,6 +14,18 @@ const DEFAULT_FOUNDATION_FOLDER = 'foundation';
 const BLOCK_FOLDERS = ['comms', DEFAULT_FOUNDATION_FOLDER];
 
 /**
+ * Sanitizes authored block names used in map keys.
+ * @param {string} name block name candidate
+ * @returns {string} safe block name
+ */
+function toBlockName(name) {
+  if (typeof name !== 'string') return '';
+  const normalizedName = name.trim().toLowerCase();
+  if (normalizedName.includes('..') || normalizedName.startsWith('/')) return '';
+  return /^[a-z][0-9a-z-]*$/.test(normalizedName) ? normalizedName : '';
+}
+
+/**
  * Returns folder list to resolve blocks from.
  * @returns {Array<string>} configured block folders
  */
@@ -28,6 +40,12 @@ function getBlockFolders() {
  */
 function getBlockAssetCandidates(blockName) {
   const candidates = [];
+  const safeBlockName = toBlockName(blockName);
+  if (!safeBlockName) {
+    // eslint-disable-next-line no-console
+    console.warn('Skipping block resolution for invalid block name', blockName);
+    return candidates;
+  }
   const addCandidate = (path) => {
     if (!candidates.find((candidate) => candidate.path === path)) {
       candidates.push({
