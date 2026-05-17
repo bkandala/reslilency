@@ -10,23 +10,70 @@ import {
 } from './aem.js';
 
 const DEFAULT_FOUNDATION_FOLDER = 'foundation';
-const BLOCK_FOLDER_MAPPINGS = {
-  'cards':['foundation'],
-  'columns':['foundation'],
-  'footer':['foundation'],
-  'fragment':['foundation'],
-  'header':['foundation'],
-  'hero':['foundation'],
-  'region-picker': ['comms'],
-};
+const DEFAULT_BLOCK_FOLDER_MAP = Object.freeze({
+  cards: DEFAULT_FOUNDATION_FOLDER,
+  columns: DEFAULT_FOUNDATION_FOLDER,
+  footer: DEFAULT_FOUNDATION_FOLDER,
+  fragment: DEFAULT_FOUNDATION_FOLDER,
+  header: DEFAULT_FOUNDATION_FOLDER,
+  hero: DEFAULT_FOUNDATION_FOLDER,
+  'region-picker': 'comms',
+});
 
 /**
- * Returns mapped folders for a block.
- * @param {string} blockName The block name
- * @returns {Array<string>} mapped block folders, or an empty array when no mapping exists
+ * Sanitizes folder names used in block resolution.
+ * Allows only lowercase letters, numbers, and hyphens to keep paths safe.
+ * @param {string} name folder name candidate
+ * @returns {string} safe folder name
  */
-function getMappedBlockFolders(blockName) {
-  return BLOCK_FOLDER_MAPPINGS[blockName] || [];
+function toFolderName(name) {
+  if (typeof name !== 'string') return '';
+  const normalizedName = name.trim().toLowerCase();
+  if (normalizedName.includes('..') || normalizedName.startsWith('/')) return '';
+  return /^[a-z][0-9a-z-]*$/.test(normalizedName) ? normalizedName : '';
+}
+
+/**
+ * Normalizes values to a list of safe folder names.
+ * @param {string|Array<string>} value configured folder value
+ * @returns {Array<string>} safe folder names
+ */
+function toFolderNames(value) {
+  const values = Array.isArray(value) ? value : [value];
+  return values.map(toFolderName).filter(Boolean);
+}
+
+/**
+ * Returns merged block-to-folder mappings.
+ * @returns {Object<string, Array<string>>} preferred folders by block name
+ */
+function getBlockFolderMap() {
+  const configuredMap = window.hlx?.blockFolderMap || {};
+  const mergedEntries = Object.entries({
+    ...DEFAULT_BLOCK_FOLDER_MAP,
+    ...configuredMap,
+  }).map(([blockName, folders]) => [blockName, toFolderNames(folders)]);
+  return Object.fromEntries(mergedEntries);
+}
+
+/**
+ * Returns folder list to resolve blocks from.
+ * @param {string} blockName The block name
+ * @returns {Array<string>} configured block folders
+ */
+function getBlockFolders(blockName) {
+  const configuredFolders = toFolderNames(window.hlx?.blockFolders || []);
+  const metadataFolders = (getMetadata('block-folders') || '')
+    .split(',')
+    .map((folder) => toFolderName(folder))
+    .filter(Boolean);
+  const preferredFolders = getBlockFolderMap()[blockName] || [];
+
+  // keep foundation as the final fallback, regardless of configuration order
+  const orderedFolders = [...preferredFolders, ...configuredFolders, ...metadataFolders]
+    .filter((folder) => folder !== DEFAULT_FOUNDATION_FOLDER);
+  orderedFolders.push(DEFAULT_FOUNDATION_FOLDER);
+  return [...new Set(orderedFolders)];
 }
 
 /**
@@ -53,8 +100,7 @@ function getBlockAssetCandidates(blockName) {
     }
   };
 
-  getMappedBlockFolders(blockName).forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
-  addCandidate(`${DEFAULT_FOUNDATION_FOLDER}/${blockName}/${blockName}`);
+  getBlockFolders(blockName).forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
   addCandidate(`${blockName}/${blockName}`);
 
   // Return empty list when the block name is not a valid mapped namespace/block pair.
@@ -62,7 +108,32 @@ function getBlockAssetCandidates(blockName) {
 }
 
 /**
- * Loads JS and CSS for a block using namespace-based resolution.
+ * Resolves a block module from the configured block folders.
+ * @param {string} blockName The block name
+ * @returns {Promise<Object>} resolved block module
+ */
+async function importResolvedBlockModule(blockName) {
+  const assetCandidates = getBlockAssetCandidates(blockName);
+  let lastError;
+
+  for (let i = 0; i < assetCandidates.length; i += 1) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      return await import(assetCandidates[i].js);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  const attemptedPaths = assetCandidates.map((candidate) => candidate.js).join(', ');
+  if (lastError) {
+    throw new Error(`Failed to resolve module for block '${blockName}'. Attempted paths: ${attemptedPaths}. ${lastError.message}`, { cause: lastError });
+  }
+  throw new Error(`Failed to resolve module for block '${blockName}'. Attempted paths: ${attemptedPaths}`);
+}
+
+/**
+ * Loads JS and CSS for a block with fallback support.
  * @param {Element} block The block element
  * @returns {Promise<Element>} loaded block
  */
@@ -123,6 +194,51 @@ async function loadBlock(block) {
     block.dataset.blockStatus = 'loaded';
   }
   return block;
+}
+
+/**
+ * Initializes a synthetic block before loading it.
+ * @param {Element} block The block element
+ */
+function initializeDynamicBlock(block) {
+  const shortBlockName = block.classList[0];
+  if (shortBlockName) {
+    block.classList.add('block');
+    block.dataset.blockName = shortBlockName;
+    block.dataset.blockStatus = 'initialized';
+    block.parentElement?.classList.add(`${shortBlockName}-wrapper`);
+  }
+}
+
+/**
+ * Loads a named block into a container using folder-aware resolution.
+ * @param {Element} container The target element
+ * @param {string} blockName The block name
+ * @returns {Promise<Element>} loaded block
+ */
+async function loadNamedBlock(container, blockName) {
+  const block = buildBlock(blockName, '');
+  container.append(block);
+  initializeDynamicBlock(block);
+  return loadBlock(block);
+}
+
+/**
+ * Loads a block named 'header' into header.
+ * @param {Element} header header element
+ * @returns {Promise<Element>} loaded block
+ */
+async function loadHeader(header) {
+  return loadNamedBlock(header, 'header');
+}
+
+/**
+ * Loads a block named 'footer' into footer.
+ * @param {Element} footer footer element
+ * @returns {Promise<Element>} loaded block
+ */
+async function loadFooter(footer) {
+  return loadNamedBlock(footer, 'footer');
 }
 
 /**
@@ -214,18 +330,18 @@ function buildAutoBlocks(main) {
     // auto load `*/fragments/*` references
     const fragments = [...main.querySelectorAll('a[href*="/fragments/"]')].filter((f) => !f.closest('.fragment'));
     if (fragments.length > 0) {
-      // eslint-disable-next-line import/no-cycle
-      import('../blocks/foundation/fragment/fragment.js').then(({ loadFragment }) => {
-        fragments.forEach(async (fragment) => {
-          try {
-            const { pathname } = new URL(fragment.href);
-            const frag = await loadFragment(pathname);
-            fragment.parentElement.replaceWith(...frag.children);
-          } catch (error) {
-            // eslint-disable-next-line no-console
-            console.error('Fragment loading failed', error);
-          }
-        });
+      importResolvedBlockModule('fragment').then(({ loadFragment }) => Promise.all(fragments.map(async (fragment) => {
+        try {
+          const { pathname } = new URL(fragment.href);
+          const frag = await loadFragment(pathname);
+          fragment.parentElement.replaceWith(...frag.children);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Fragment loading failed', error);
+        }
+      }))).catch((error) => {
+        // eslint-disable-next-line no-console
+        console.error('Fragment module failed to load', error);
       });
     }
 
