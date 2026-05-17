@@ -1,7 +1,6 @@
 import {
   buildBlock,
   sampleRUM,
-  decorateBlock,
   decorateIcons,
   decorateSections,
   decorateBlocks,
@@ -10,8 +9,14 @@ import {
   loadCSS,
 } from './aem.js';
 
-const DEFAULT_FOUNDATION_FOLDER = 'foundation';
-const BLOCK_FOLDERS = ['comms', DEFAULT_FOUNDATION_FOLDER];
+const BLOCK_FOLDER_MAPPING = {
+  foundation: 'foundation',
+  comms: 'comms',
+  // Alias for "comms" to support alternative namespace usage.
+  comm: 'comms',
+};
+const SUPPORTED_BLOCK_NAMESPACES = [...new Set(Object.values(BLOCK_FOLDER_MAPPING))].sort();
+const BLOCK_NAMESPACE_ERROR_SUFFIX = '\'comm\' is accepted as an alias for \'comms\'.';
 
 /**
  * Sanitizes authored block names used in map keys.
@@ -26,15 +31,26 @@ function toBlockName(name) {
 }
 
 /**
- * Returns folder list to resolve blocks from.
- * @returns {Array<string>} configured block folders
+ * Resolves a strict namespace/block-name authored block reference.
+ * Deeper paths such as namespace/block/variant are intentionally rejected.
+ * @param {string} blockName authored block name
+ * @returns {{namespace: string, name: string}|null} parsed block reference
  */
-function getBlockFolders() {
-  return BLOCK_FOLDERS;
+function getMappedBlockReference(blockName) {
+  if (typeof blockName !== 'string') return null;
+  const rawParts = blockName.split('/');
+  if (rawParts.length !== 2) return null;
+  const namespace = toFolderName(rawParts[0]);
+  const name = toFolderName(rawParts[1]);
+  if (!namespace || !name) return null;
+  const mappedFolder = BLOCK_FOLDER_MAPPING[namespace];
+  if (!mappedFolder) return null;
+  return { namespace: mappedFolder, name };
 }
 
 /**
- * Returns block asset candidates for configured block folders.
+ * Returns block asset candidates for namespace-based block layouts.
+ * Returns an empty list when the authored block name is not a valid mapped namespace/block pair.
  * @param {string} blockName The block name
  * @returns {Array} list of js/css candidates
  */
@@ -56,13 +72,20 @@ function getBlockAssetCandidates(blockName) {
     }
   };
 
-  getBlockFolders().forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
+  const mappedBlock = getMappedBlockReference(blockName);
+  if (mappedBlock) {
+    // AEM block convention is /blocks/<folder>/<block-name>/<block-name>.{js|css}
+    addCandidate(`${mappedBlock.namespace}/${mappedBlock.name}/${mappedBlock.name}`);
+    // Namespaced references resolve only through their mapped folder to avoid extra 404 probes.
+    return candidates;
+  }
 
+  // Return empty list when the block name is not a valid mapped namespace/block pair.
   return candidates;
 }
 
 /**
- * Loads JS and CSS for a block with fallback support.
+ * Loads JS and CSS for a block using namespace-based resolution.
  * @param {Element} block The block element
  * @returns {Promise<Element>} loaded block
  */
@@ -73,7 +96,9 @@ async function loadBlock(block) {
     const { blockName } = block.dataset;
     const assetCandidates = getBlockAssetCandidates(blockName);
     let assetLoaded = false;
-    let fallbackError;
+    let fallbackError = assetCandidates.length === 0
+      ? new Error(`Block "${blockName}" must use the supported namespace/block-name format. Supported namespaces: ${SUPPORTED_BLOCK_NAMESPACES.join(', ')}. ${BLOCK_NAMESPACE_ERROR_SUFFIX}`)
+      : undefined;
     let cssFound = false;
 
     for (let i = 0; i < assetCandidates.length; i += 1) {

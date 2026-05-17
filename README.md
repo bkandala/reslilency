@@ -37,15 +37,10 @@ npm run lint
 
 - Shared/reusable blocks are available under `/blocks/foundation/<block-name>`.
 - Team blocks can live in dedicated folders under `/blocks/<team-folder>/...` (for example as git submodules).
-- Keep authored block names unchanged (for example `hero`, `cards`, `columns`), then configure which folders to search:
-  - Metadata: `<meta name="block-folders" content="team-a, team-b">`
-  - Runtime config: `window.hlx.blockFolders = ['team-a', 'team-b'];` (set this before `/scripts/scripts.js` loads, for example in `head.html`)
-- For block-specific routing, configure a block-to-folder mapping:
-  - Metadata: `<meta name="block-folder-map" content="region-picker:comms, hero:foundation">`
-  - Runtime config: `window.hlx.blockFolderMap = { 'region-picker': 'comms', hero: 'foundation' };`
-  - Default mapping includes `region-picker -> comms`
-- Block resolution order for an authored `<block-name>` is:
-  1. `/blocks/<mapped-folder>/<block-name>/<block-name>.{js|css}` (if mapped)
-  2. `/blocks/<configured-folder>/<block-name>/<block-name>.{js|css}` (in configured order)
-  3. `/blocks/foundation/<block-name>/<block-name>.{js|css}`
-  4. `/blocks/<block-name>/<block-name>.{js|css}` (legacy compatibility)
+- Authored block names must include a namespace (for example `foundation/hero`, `comms/region-picker`).
+- Supported namespace mappings are:
+  - `foundation/*` -> `/blocks/foundation/<block-name>/<block-name>.{js|css}`
+  - `comms/*` -> `/blocks/comms/<block-name>/<block-name>.{js|css}`
+  - `comm/*` -> `/blocks/comms/<block-name>/<block-name>.{js|css}` (compatibility alias)
+- Non-namespaced block names are no longer resolved and will fail to load with a console error.
+  - Example: `Block "hero" must use the supported namespace/block-name format. Supported namespaces: foundation, comms ("comm" is accepted as an alias for "comms").`
