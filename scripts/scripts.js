@@ -1,7 +1,6 @@
 import {
   buildBlock,
   sampleRUM,
-  getMetadata,
   decorateIcons,
   decorateSections,
   decorateBlocks,
@@ -211,6 +210,51 @@ async function loadBlock(block) {
     block.dataset.blockStatus = 'loaded';
   }
   return block;
+}
+
+/**
+ * Initializes a synthetic block before loading it.
+ * @param {Element} block The block element
+ */
+function initializeDynamicBlock(block) {
+  const shortBlockName = block.classList[0];
+  if (shortBlockName) {
+    block.classList.add('block');
+    block.dataset.blockName = shortBlockName;
+    block.dataset.blockStatus = 'initialized';
+    block.parentElement?.classList.add(`${shortBlockName}-wrapper`);
+  }
+}
+
+/**
+ * Loads a named block into a container using folder-aware resolution.
+ * @param {Element} container The target element
+ * @param {string} blockName The block name
+ * @returns {Promise<Element>} loaded block
+ */
+async function loadNamedBlock(container, blockName) {
+  const block = buildBlock(blockName, '');
+  container.append(block);
+  initializeDynamicBlock(block);
+  return loadBlock(block);
+}
+
+/**
+ * Loads a block named 'header' into header.
+ * @param {Element} header header element
+ * @returns {Promise<Element>} loaded block
+ */
+async function loadHeader(header) {
+  return loadNamedBlock(header, 'header');
+}
+
+/**
+ * Loads a block named 'footer' into footer.
+ * @param {Element} footer footer element
+ * @returns {Promise<Element>} loaded block
+ */
+async function loadFooter(footer) {
+  return loadNamedBlock(footer, 'footer');
 }
 
 /**
