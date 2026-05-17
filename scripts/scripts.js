@@ -3,7 +3,6 @@ import {
   loadHeader,
   loadFooter,
   sampleRUM,
-  getMetadata,
   decorateIcons,
   decorateSections,
   decorateBlocks,
@@ -12,7 +11,6 @@ import {
   loadCSS,
 } from './aem.js';
 
-const DEFAULT_FOUNDATION_FOLDER = 'foundation';
 const BLOCK_FOLDER_MAPPING = {
   foundation: 'foundation',
   comms: 'comms',
@@ -34,26 +32,6 @@ function toFolderName(name) {
 }
 
 /**
- * Returns folder list to resolve blocks from.
- * @returns {Array<string>} configured block folders
- */
-function getBlockFolders() {
-  const configuredFolders = (Array.isArray(window.hlx?.blockFolders) ? window.hlx.blockFolders : ['comms'])
-    .map(toFolderName)
-    .filter(Boolean);
-  const metadataFolders = (getMetadata('block-folders') || '')
-    .split(',')
-    .map((folder) => toFolderName(folder))
-    .filter(Boolean);
-
-  // keep foundation as the final fallback, regardless of configuration order
-  const orderedFolders = [...configuredFolders, ...metadataFolders]
-    .filter((folder) => folder !== DEFAULT_FOUNDATION_FOLDER);
-  orderedFolders.push(DEFAULT_FOUNDATION_FOLDER);
-  return [...new Set(orderedFolders)];
-}
-
-/**
  * Resolves optional namespace + block name from authored block reference.
  * @param {string} blockName authored block name
  * @returns {{namespace: string, name: string}|null} parsed block reference
@@ -71,7 +49,7 @@ function getMappedBlockReference(blockName) {
 }
 
 /**
- * Returns block asset candidates for folder-based and legacy block layouts.
+ * Returns block asset candidates for namespace-based block layouts.
  * @param {string} blockName The block name
  * @returns {Array} list of js/css candidates
  */
@@ -95,9 +73,6 @@ function getBlockAssetCandidates(blockName) {
     return candidates;
   }
 
-  getBlockFolders().forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
-  addCandidate(`${blockName}/${blockName}`);
-
   return candidates;
 }
 
@@ -113,7 +88,7 @@ async function loadBlock(block) {
     const { blockName } = block.dataset;
     const assetCandidates = getBlockAssetCandidates(blockName);
     let assetLoaded = false;
-    let fallbackError;
+    let fallbackError = new Error(`Block "${blockName}" must use a mapped namespace.`);
     let cssFound = false;
 
     for (let i = 0; i < assetCandidates.length; i += 1) {
