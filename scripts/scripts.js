@@ -109,10 +109,10 @@ async function importResolvedBlockModule(blockName) {
   const assetCandidates = getBlockAssetCandidates(blockName);
   let fallbackError;
 
-  for (let i = 0; i < assetCandidates.length; i += 1) {
+  for (const candidate of assetCandidates) {
     try {
       // eslint-disable-next-line no-await-in-loop
-      return await import(assetCandidates[i].js);
+      return await import(candidate.js);
     } catch (error) {
       fallbackError = error;
     }
@@ -305,7 +305,7 @@ function buildAutoBlocks(main) {
     const fragments = [...main.querySelectorAll('a[href*="/fragments/"]')].filter((f) => !f.closest('.fragment'));
     if (fragments.length > 0) {
       importResolvedBlockModule('fragment').then(async ({ loadFragment }) => {
-        await Promise.all(fragments.map(async (fragment) => {
+        return Promise.all(fragments.map(async (fragment) => {
           try {
             const { pathname } = new URL(fragment.href);
             const frag = await loadFragment(pathname);
