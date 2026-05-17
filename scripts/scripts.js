@@ -120,8 +120,7 @@ async function importResolvedBlockModule(blockName) {
 
   const attemptedPaths = assetCandidates.map((candidate) => candidate.js).join(', ');
   if (lastError) {
-    lastError.message = `Failed to resolve module for block '${blockName}'. Attempted paths: ${attemptedPaths}. ${lastError.message}`;
-    throw lastError;
+    throw new Error(`Failed to resolve module for block '${blockName}'. Attempted paths: ${attemptedPaths}. ${lastError.message}`, { cause: lastError });
   }
   throw new Error(`Failed to resolve module for block '${blockName}'. Attempted paths: ${attemptedPaths}`);
 }
@@ -309,16 +308,15 @@ function buildAutoBlocks(main) {
     const fragments = [...main.querySelectorAll('a[href*="/fragments/"]')].filter((f) => !f.closest('.fragment'));
     if (fragments.length > 0) {
       importResolvedBlockModule('fragment').then(({ loadFragment }) => Promise.all(fragments.map(async (fragment) => {
-          try {
-            const { pathname } = new URL(fragment.href);
-            const frag = await loadFragment(pathname);
-            fragment.parentElement.replaceWith(...frag.children);
-          } catch (error) {
-            // eslint-disable-next-line no-console
-            console.error('Fragment loading failed', error);
-          }
-        }));
-      }).catch((error) => {
+        try {
+          const { pathname } = new URL(fragment.href);
+          const frag = await loadFragment(pathname);
+          fragment.parentElement.replaceWith(...frag.children);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Fragment loading failed', error);
+        }
+      }))).catch((error) => {
         // eslint-disable-next-line no-console
         console.error('Fragment module failed to load', error);
       });
