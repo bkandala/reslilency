@@ -1,7 +1,5 @@
 import {
   buildBlock,
-  loadHeader,
-  loadFooter,
   sampleRUM,
   decorateIcons,
   decorateSections,
@@ -26,12 +24,19 @@ function getMappedBlockFolders(blockName) {
 }
 
 /**
- * Returns block asset candidates for folder-based and legacy block layouts.
+ * Returns block asset candidates for namespace-based block layouts.
+ * Returns an empty list when the authored block name is not a valid mapped namespace/block pair.
  * @param {string} blockName The block name
  * @returns {Array} list of js/css candidates
  */
 function getBlockAssetCandidates(blockName) {
   const candidates = [];
+  const safeBlockName = toBlockName(blockName);
+  if (!safeBlockName) {
+    // eslint-disable-next-line no-console
+    console.warn('Skipping block resolution for invalid block name', blockName);
+    return candidates;
+  }
   const addCandidate = (path) => {
     if (!candidates.find((candidate) => candidate.path === path)) {
       candidates.push({
@@ -46,11 +51,12 @@ function getBlockAssetCandidates(blockName) {
   addCandidate(`${DEFAULT_FOUNDATION_FOLDER}/${blockName}/${blockName}`);
   addCandidate(`${blockName}/${blockName}`);
 
+  // Return empty list when the block name is not a valid mapped namespace/block pair.
   return candidates;
 }
 
 /**
- * Loads JS and CSS for a block with fallback support.
+ * Loads JS and CSS for a block using namespace-based resolution.
  * @param {Element} block The block element
  * @returns {Promise<Element>} loaded block
  */
@@ -61,7 +67,9 @@ async function loadBlock(block) {
     const { blockName } = block.dataset;
     const assetCandidates = getBlockAssetCandidates(blockName);
     let assetLoaded = false;
-    let fallbackError;
+    let fallbackError = assetCandidates.length === 0
+      ? new Error(`Block "${blockName}" must use the supported namespace/block-name format. Supported namespaces: ${SUPPORTED_BLOCK_NAMESPACES.join(', ')}. ${BLOCK_NAMESPACE_ERROR_SUFFIX}`)
+      : undefined;
     let cssFound = false;
 
     for (let i = 0; i < assetCandidates.length; i += 1) {
@@ -132,6 +140,20 @@ async function loadSectionWithFallback(section, loadCallback) {
 }
 
 /**
+ * Loads a named block into a target element.
+ * @param {Element} target target element
+ * @param {string} blockName block name
+ * @returns {Promise<void>}
+ */
+async function loadNamedBlock(target, blockName) {
+  if (!target) return;
+  const block = buildBlock(blockName, '');
+  target.append(block);
+  decorateBlock(block);
+  await loadBlock(block);
+}
+
+/**
  * Loads all sections.
  * @param {Element} element parent element of sections
  */
@@ -187,7 +209,7 @@ function buildAutoBlocks(main) {
     const fragments = [...main.querySelectorAll('a[href*="/fragments/"]')].filter((f) => !f.closest('.fragment'));
     if (fragments.length > 0) {
       // eslint-disable-next-line import/no-cycle
-      import('../blocks/fragment/fragment.js').then(({ loadFragment }) => {
+      import('../blocks/foundation/fragment/fragment.js').then(({ loadFragment }) => {
         fragments.forEach(async (fragment) => {
           try {
             const { pathname } = new URL(fragment.href);
@@ -289,7 +311,7 @@ async function loadEager(doc) {
  * @param {Element} doc The container element
  */
 async function loadLazy(doc) {
-  loadHeader(doc.querySelector('header'));
+  loadNamedBlock(doc.querySelector('header'), 'header');
 
   const main = doc.querySelector('main');
   await loadSectionsWithFallback(main);
@@ -298,7 +320,7 @@ async function loadLazy(doc) {
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
   if (hash && element) element.scrollIntoView();
 
-  loadFooter(doc.querySelector('footer'));
+  loadNamedBlock(doc.querySelector('footer'), 'footer');
 
   loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
   loadFonts();
