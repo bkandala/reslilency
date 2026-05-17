@@ -37,10 +37,9 @@ npm run lint
 
 - Shared/reusable blocks are available under `/blocks/foundation/<block-name>`.
 - Team blocks can live in dedicated folders under `/blocks/<team-folder>/...` (for example as git submodules).
-- Keep authored block names unchanged (for example `hero`, `cards`, `columns`), then configure which folders to search:
-  - Metadata: `<meta name="block-folders" content="team-a, team-b">`
-  - Runtime config: `window.hlx.blockFolders = ['team-a', 'team-b'];` (set this before `/scripts/scripts.js` loads, for example in `head.html`)
+- Keep authored block names unchanged (for example `hero`, `cards`, `columns`) and map namespaced blocks in `/scripts/scripts.js`.
+- When you add a new namespaced block, update `BLOCK_FOLDER_MAPPINGS` in `/scripts/scripts.js`.
 - Block resolution order for an authored `<block-name>` is:
-  1. `/blocks/<configured-folder>/<block-name>/<block-name>.{js|css}` (in configured order)
+  1. `/blocks/<mapped-folder>/<block-name>/<block-name>.{js|css}` (from `BLOCK_FOLDER_MAPPINGS` in `/scripts/scripts.js`)
   2. `/blocks/foundation/<block-name>/<block-name>.{js|css}`
   3. `/blocks/<block-name>/<block-name>.{js|css}` (legacy compatibility)

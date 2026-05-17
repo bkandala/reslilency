@@ -1,7 +1,6 @@
 import {
   buildBlock,
   sampleRUM,
-  getMetadata,
   decorateIcons,
   decorateSections,
   decorateBlocks,
@@ -78,12 +77,19 @@ function getBlockFolders(blockName) {
 }
 
 /**
- * Returns block asset candidates for folder-based and legacy block layouts.
+ * Returns block asset candidates for namespace-based block layouts.
+ * Returns an empty list when the authored block name is not a valid mapped namespace/block pair.
  * @param {string} blockName The block name
  * @returns {Array} list of js/css candidates
  */
 function getBlockAssetCandidates(blockName) {
   const candidates = [];
+  const safeBlockName = toBlockName(blockName);
+  if (!safeBlockName) {
+    // eslint-disable-next-line no-console
+    console.warn('Skipping block resolution for invalid block name', blockName);
+    return candidates;
+  }
   const addCandidate = (path) => {
     if (!candidates.find((candidate) => candidate.path === path)) {
       candidates.push({
@@ -97,6 +103,7 @@ function getBlockAssetCandidates(blockName) {
   getBlockFolders(blockName).forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
   addCandidate(`${blockName}/${blockName}`);
 
+  // Return empty list when the block name is not a valid mapped namespace/block pair.
   return candidates;
 }
 
@@ -137,7 +144,9 @@ async function loadBlock(block) {
     const { blockName } = block.dataset;
     const assetCandidates = getBlockAssetCandidates(blockName);
     let assetLoaded = false;
-    let fallbackError;
+    let fallbackError = assetCandidates.length === 0
+      ? new Error(`Block "${blockName}" must use the supported namespace/block-name format. Supported namespaces: ${SUPPORTED_BLOCK_NAMESPACES.join(', ')}. ${BLOCK_NAMESPACE_ERROR_SUFFIX}`)
+      : undefined;
     let cssFound = false;
 
     for (let i = 0; i < assetCandidates.length; i += 1) {
@@ -250,6 +259,20 @@ async function loadSectionWithFallback(section, loadCallback) {
     section.dataset.sectionStatus = 'loaded';
     section.style.display = null;
   }
+}
+
+/**
+ * Loads a named block into a target element.
+ * @param {Element} target target element
+ * @param {string} blockName block name
+ * @returns {Promise<void>}
+ */
+async function loadNamedBlock(target, blockName) {
+  if (!target) return;
+  const block = buildBlock(blockName, '');
+  target.append(block);
+  decorateBlock(block);
+  await loadBlock(block);
 }
 
 /**
@@ -410,7 +433,7 @@ async function loadEager(doc) {
  * @param {Element} doc The container element
  */
 async function loadLazy(doc) {
-  loadHeader(doc.querySelector('header'));
+  loadNamedBlock(doc.querySelector('header'), 'header');
 
   const main = doc.querySelector('main');
   await loadSectionsWithFallback(main);
@@ -419,7 +442,7 @@ async function loadLazy(doc) {
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
   if (hash && element) element.scrollIntoView();
 
-  loadFooter(doc.querySelector('footer'));
+  loadNamedBlock(doc.querySelector('footer'), 'footer');
 
   loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
   loadFonts();
