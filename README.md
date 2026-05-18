@@ -33,14 +33,12 @@ npm run lint
 1. Start AEM Proxy: `aem up` (opens your browser at `http://localhost:3000`)
 1. Open the `{repo}` directory in your favorite IDE and start coding :)
 
-## Team block folders (submodule-friendly)
+## Block location registry
 
-- Shared/reusable blocks are available under `/blocks/foundation/<block-name>`.
-- Team blocks can live in dedicated folders under `/blocks/<team-folder>/...` (for example as git submodules).
-- Keep authored block names unchanged (for example `hero`, `cards`, `columns`), then configure which folders to search:
-  - Metadata: `<meta name="block-folders" content="team-a, team-b">`
-  - Runtime config: `window.hlx.blockFolders = ['team-a', 'team-b'];` (set this before `/scripts/scripts.js` loads, for example in `head.html`)
-- Block resolution order for an authored `<block-name>` is:
-  1. `/blocks/<configured-folder>/<block-name>/<block-name>.{js|css}` (in configured order)
-  2. `/blocks/foundation/<block-name>/<block-name>.{js|css}`
-  3. `/blocks/<block-name>/<block-name>.{js|css}` (legacy compatibility)
+- Block loading is resolved by an explicit registry in `/home/runner/work/reslilency/reslilency/scripts/scripts.js`.
+- Authoring names remain unchanged (for example `hero`, `cards`, `columns`, `header`, `fragment`, `footer`).
+- Current layout:
+  - Foundation blocks: `/blocks/foundation/<block-name>/<block-name>.{js|css}`
+  - Comms blocks: `/blocks/comms/<block-name>/<block-name>.{js|css}`
+  - Root blocks (kept intentionally): `/blocks/header/header.{js|css}`, `/blocks/fragment/fragment.{js|css}`, and `/blocks/footer/footer.{js|css}`
+- There is no folder search fallback chain. Each block resolves to a single canonical location from the registry (with a deterministic default folder).

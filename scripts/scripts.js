@@ -1,9 +1,7 @@
 import {
   buildBlock,
-  loadHeader,
-  loadFooter,
+  decorateBlock,
   sampleRUM,
-  getMetadata,
   decorateIcons,
   decorateSections,
   decorateBlocks,
@@ -13,61 +11,29 @@ import {
 } from './aem.js';
 
 const DEFAULT_FOUNDATION_FOLDER = 'foundation';
+const BLOCK_FOLDER_REGISTRY = Object.freeze({
+  header: '',
+  fragment: '',
+  footer: '',
+  hero: DEFAULT_FOUNDATION_FOLDER,
+  cards: DEFAULT_FOUNDATION_FOLDER,
+  columns: DEFAULT_FOUNDATION_FOLDER,
+  'region-picker': 'comms',
+});
 
 /**
- * Sanitizes folder names used in block resolution.
- * Allows only lowercase letters, numbers, and hyphens to keep paths safe.
- * @param {string} name folder name candidate
- * @returns {string} safe folder name
- */
-function toFolderName(name) {
-  if (typeof name !== 'string') return '';
-  const normalizedName = name.trim().toLowerCase();
-  if (normalizedName.includes('..') || normalizedName.startsWith('/')) return '';
-  return /^[a-z][0-9a-z-]*$/.test(normalizedName) ? normalizedName : '';
-}
-
-/**
- * Returns folder list to resolve blocks from.
- * @returns {Array<string>} configured block folders
- */
-function getBlockFolders() {
-  const configuredFolders = (Array.isArray(window.hlx?.blockFolders) ? window.hlx.blockFolders : ['comms'])
-    .map(toFolderName)
-    .filter(Boolean);
-  const metadataFolders = (getMetadata('block-folders') || '')
-    .split(',')
-    .map((folder) => toFolderName(folder))
-    .filter(Boolean);
-
-  // keep foundation as the final fallback, regardless of configuration order
-  const orderedFolders = [...configuredFolders, ...metadataFolders]
-    .filter((folder) => folder !== DEFAULT_FOUNDATION_FOLDER);
-  orderedFolders.push(DEFAULT_FOUNDATION_FOLDER);
-  return [...new Set(orderedFolders)];
-}
-
-/**
- * Returns block asset candidates for folder-based and legacy block layouts.
+ * Resolves canonical block asset paths from registry.
  * @param {string} blockName The block name
- * @returns {Array} list of js/css candidates
+ * @returns {{path: string, js: string, css: string}} resolved block paths
  */
-function getBlockAssetCandidates(blockName) {
-  const candidates = [];
-  const addCandidate = (path) => {
-    if (!candidates.find((candidate) => candidate.path === path)) {
-      candidates.push({
-        path,
-        js: `${window.hlx.codeBasePath}/blocks/${path}.js`,
-        css: `${window.hlx.codeBasePath}/blocks/${path}.css`,
-      });
-    }
+function getBlockAssetPath(blockName) {
+  const folder = BLOCK_FOLDER_REGISTRY[blockName] ?? DEFAULT_FOUNDATION_FOLDER;
+  const path = folder ? `${folder}/${blockName}/${blockName}` : `${blockName}/${blockName}`;
+  return {
+    path,
+    js: `${window.hlx.codeBasePath}/blocks/${path}.js`,
+    css: `${window.hlx.codeBasePath}/blocks/${path}.css`,
   };
-
-  getBlockFolders().forEach((folder) => addCandidate(`${folder}/${blockName}/${blockName}`));
-  addCandidate(`${blockName}/${blockName}`);
-
-  return candidates;
 }
 
 /**
@@ -80,51 +46,34 @@ async function loadBlock(block) {
   if (status !== 'loading' && status !== 'loaded') {
     block.dataset.blockStatus = 'loading';
     const { blockName } = block.dataset;
-    const assetCandidates = getBlockAssetCandidates(blockName);
-    let assetLoaded = false;
-    let fallbackError;
+    const assetPath = getBlockAssetPath(blockName);
+    let moduleLoaded = false;
     let cssFound = false;
+    let loadError;
+    let blockModule;
 
-    for (let i = 0; i < assetCandidates.length; i += 1) {
-      const candidate = assetCandidates[i];
-      let blockModule;
-      let moduleLoaded = false;
-
-      try {
-        // eslint-disable-next-line no-await-in-loop
-        blockModule = await import(candidate.js);
-        moduleLoaded = true;
-      } catch (error) {
-        fallbackError = error;
-        // JS is optional for CSS-only blocks
-      }
-
-      try {
-        // eslint-disable-next-line no-await-in-loop
-        await loadCSS(candidate.css);
-        cssFound = true;
-      } catch (error) {
-        fallbackError = error;
-      }
-
-      if (moduleLoaded && blockModule.default) {
-        // eslint-disable-next-line no-await-in-loop
-        await blockModule.default(block);
-      }
-
-      if (moduleLoaded) {
-        assetLoaded = true;
-        break;
-      }
+    try {
+      blockModule = await import(assetPath.js);
+      moduleLoaded = true;
+    } catch (error) {
+      loadError = error;
+      // JS is optional for CSS-only blocks
     }
 
-    if (!assetLoaded && cssFound) {
-      assetLoaded = true;
+    try {
+      await loadCSS(assetPath.css);
+      cssFound = true;
+    } catch (error) {
+      loadError = error;
     }
 
-    if (!assetLoaded) {
+    if (moduleLoaded && blockModule.default) {
+      await blockModule.default(block);
+    }
+
+    if (!moduleLoaded && !cssFound) {
       // eslint-disable-next-line no-console
-      console.error(`failed to load module for ${blockName}`, fallbackError);
+      console.error(`failed to load block ${blockName} from ${assetPath.path}`, loadError);
     }
 
     block.dataset.blockStatus = 'loaded';
@@ -156,7 +105,7 @@ async function loadSectionWithFallback(section, loadCallback) {
  * Loads all sections.
  * @param {Element} element parent element of sections
  */
-async function loadSectionsWithFallback(element) {
+export async function loadSectionsWithFallback(element) {
   const sections = [...element.querySelectorAll('div.section')];
   for (let i = 0; i < sections.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
@@ -165,6 +114,20 @@ async function loadSectionsWithFallback(element) {
       sampleRUM.enhance();
     }
   }
+}
+
+/**
+ * Loads a named block into a container using explicit registry-based resolution.
+ * @param {Element} container container element
+ * @param {string} blockName name of the block
+ * @returns {Promise<Element|null>} loaded block or null when container is absent
+ */
+async function loadNamedBlock(container, blockName) {
+  if (!container) return null;
+  const block = buildBlock(blockName, '');
+  container.append(block);
+  decorateBlock(block);
+  return loadBlock(block);
 }
 
 /**
@@ -207,8 +170,9 @@ function buildAutoBlocks(main) {
     // auto load `*/fragments/*` references
     const fragments = [...main.querySelectorAll('a[href*="/fragments/"]')].filter((f) => !f.closest('.fragment'));
     if (fragments.length > 0) {
+      const { js } = getBlockAssetPath('fragment');
       // eslint-disable-next-line import/no-cycle
-      import('../blocks/fragment/fragment.js').then(({ loadFragment }) => {
+      import(js).then(({ loadFragment }) => {
         fragments.forEach(async (fragment) => {
           try {
             const { pathname } = new URL(fragment.href);
@@ -310,7 +274,7 @@ async function loadEager(doc) {
  * @param {Element} doc The container element
  */
 async function loadLazy(doc) {
-  loadHeader(doc.querySelector('header'));
+  loadNamedBlock(doc.querySelector('header'), 'header');
 
   const main = doc.querySelector('main');
   await loadSectionsWithFallback(main);
@@ -319,7 +283,7 @@ async function loadLazy(doc) {
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
   if (hash && element) element.scrollIntoView();
 
-  loadFooter(doc.querySelector('footer'));
+  loadNamedBlock(doc.querySelector('footer'), 'footer');
 
   loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
   loadFonts();
