@@ -56,7 +56,7 @@ async function loadBlock(block) {
       blockModule = await import(assetPath.js);
       moduleLoaded = true;
       // eslint-disable-next-line no-console
-        console.log(`loading block "${blockName}" from path: ${assetPath}`);
+        console.log(`loading block "${blockName}" from path: ${assetPath.path}`);
     } catch (error) {
       loadError = error;
       // JS is optional for CSS-only blocks
