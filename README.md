@@ -36,9 +36,9 @@ npm run lint
 ## Block location registry
 
 - Block loading is resolved by an explicit registry in `/home/runner/work/reslilency/reslilency/scripts/scripts.js`.
-- Authoring names remain unchanged (for example `hero`, `cards`, `columns`, `header`, `fragment`).
+- Authoring names remain unchanged (for example `hero`, `cards`, `columns`, `header`, `fragment`, `footer`).
 - Current layout:
   - Foundation blocks: `/blocks/foundation/<block-name>/<block-name>.{js|css}`
   - Comms blocks: `/blocks/comms/<block-name>/<block-name>.{js|css}`
-  - Root blocks (kept intentionally): `/blocks/header/header.{js|css}` and `/blocks/fragment/fragment.{js|css}`
+  - Root blocks (kept intentionally): `/blocks/header/header.{js|css}`, `/blocks/fragment/fragment.{js|css}`, and `/blocks/footer/footer.{js|css}`
 - There is no folder search fallback chain. Each block resolves to a single canonical location from the registry (with a deterministic default folder).

@@ -14,7 +14,7 @@ const DEFAULT_FOUNDATION_FOLDER = 'foundation';
 const BLOCK_FOLDER_REGISTRY = Object.freeze({
   header: '',
   fragment: '',
-  footer: DEFAULT_FOUNDATION_FOLDER,
+  footer: '',
   hero: DEFAULT_FOUNDATION_FOLDER,
   cards: DEFAULT_FOUNDATION_FOLDER,
   columns: DEFAULT_FOUNDATION_FOLDER,
