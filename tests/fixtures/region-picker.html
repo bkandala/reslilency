@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Region Picker – Standard Config</title>
+  <link rel="stylesheet" href="/blocks/comms/region-picker/region-picker.css">
+</head>
+<body>
+  <!--
+    Authored block markup that mimics what AEM/Edge Delivery produces.
+    Config rows: label, placeholder, options-key.
+  -->
+  <div class="region-picker block" data-block-name="region-picker" data-block-status="initialized">
+    <div>
+      <div>label</div>
+      <div>Region</div>
+    </div>
+    <div>
+      <div>placeholder</div>
+      <div>Select a region</div>
+    </div>
+    <div>
+      <div>options-key</div>
+      <div>regions</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import decorate from '/blocks/comms/region-picker/region-picker.js';
+    const block = document.querySelector('.region-picker.block');
+    window.__decoratePromise = decorate(block);
+    window.__decoratePromise
+      .then(() => { window.__decorated = true; })
+      .catch(() => { window.__decorated = true; });
+  </script>
+</body>
+</html>
