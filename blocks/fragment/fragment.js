@@ -7,11 +7,8 @@
 // eslint-disable-next-line import/no-cycle
 import {
   decorateMain,
+  loadSectionsWithFallback,
 } from '../../scripts/scripts.js';
-
-import {
-  loadSections,
-} from '../../scripts/aem.js';
 
 /**
  * Loads a fragment.
@@ -35,7 +32,7 @@ export async function loadFragment(path) {
       resetAttributeBase('source', 'srcset');
 
       decorateMain(main);
-      await loadSections(main);
+      await loadSectionsWithFallback(main);
       return main;
     }
   }
