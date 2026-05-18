@@ -2,7 +2,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Playwright configuration for the reslilency project.
+ * Playwright configuration for the resiliency project.
  * Tests are kept under tests/ and use a local static file server.
  *
  * @see https://playwright.dev/docs/test-configuration

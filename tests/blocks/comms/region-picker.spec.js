@@ -5,7 +5,7 @@
  *  1. Routes /config/regions.json to control API responses.
  *  2. Navigates to a fixture HTML page that loads and decorates the block.
  *  3. Waits for decoration to complete via window.__decorated flag.
- *  4. Asserts the rendered DOM structure and behaviour.
+ *  4. Asserts the rendered DOM structure and behavior.
  */
 import { test, expect } from '@playwright/test';
 
