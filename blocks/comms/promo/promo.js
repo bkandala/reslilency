@@ -18,7 +18,7 @@ function replacePartnerToken(value, partner, configuredToken) {
 
   let output = input.replace(DEFAULT_TOKEN_REGEX, partner);
   if (configuredToken) {
-    output = output.split(configuredToken).join(partner);
+    output = output.replaceAll(configuredToken, partner);
   }
   return output;
 }
