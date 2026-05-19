@@ -1,6 +1,6 @@
 import { readBlockConfig } from '../../../scripts/aem.js';
 
-const DEFAULT_TOKEN_REGEX = /\{\{\s*partner\s*\}\}|\[\s*partner\s*\]/gi;
+const PARTNER_TOKEN_REGEX = /\{\{\s*partner\s*\}\}|\[\s*partner\s*\]/gi;
 
 function getPartnerFromPath() {
   const segments = window.location.pathname.split('/').filter(Boolean);
@@ -16,7 +16,7 @@ function replacePartnerToken(value, partner, configuredToken) {
   const input = String(value || '');
   if (!input || !partner) return input;
 
-  let output = input.replace(DEFAULT_TOKEN_REGEX, partner);
+  let output = input.replace(PARTNER_TOKEN_REGEX, partner);
   if (configuredToken) {
     output = output.replaceAll(configuredToken, partner);
   }
@@ -73,7 +73,6 @@ export default async function decorate(block) {
     button.className = 'button primary';
     button.href = buttonUrl;
     button.textContent = buttonText;
-    button.title = buttonText;
 
     buttonWrapper.append(button);
     wrapper.append(buttonWrapper);
