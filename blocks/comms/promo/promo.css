@@ -1,0 +1,21 @@
+.promo {
+  max-width: 720px;
+}
+
+.promo .promo-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.promo .promo-title {
+  margin: 0;
+}
+
+.promo .promo-description {
+  margin: 0;
+}
+
+.promo .button-wrapper {
+  margin: 0;
+}
