@@ -42,7 +42,7 @@ export default async function decorate(block) {
   const partner = getPartnerFromPath();
   const token = String(config['partner-token'] || '').trim();
 
-  const title = replacePartnerToken(config.title, partner, token);
+  const title = replacePartnerToken(config.title, partner, token).trim();
   const description = replacePartnerToken(config.description, partner, token).trim();
   const buttonText = String(config['button-text'] || '').trim();
   const buttonUrlRaw = replacePartnerToken(config['button-url'], partner, token);
