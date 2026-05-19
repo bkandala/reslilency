@@ -4,7 +4,12 @@ const DEFAULT_TOKEN_REGEX = /\{\{\s*partner\s*\}\}|\[\s*partner\s*\]/gi;
 
 function getPartnerFromPath() {
   const segments = window.location.pathname.split('/').filter(Boolean);
-  return segments.length ? decodeURIComponent(segments[0]).trim() : '';
+  if (!segments.length) return '';
+  try {
+    return decodeURIComponent(segments[0]).trim();
+  } catch (e) {
+    return '';
+  }
 }
 
 function replacePartnerToken(value, partner, configuredToken) {
@@ -18,12 +23,13 @@ function replacePartnerToken(value, partner, configuredToken) {
   return output;
 }
 
-function isSafeUrl(value) {
+function getSafeUrl(value) {
   try {
     const parsed = new URL(value, window.location.href);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
+    return parsed.href;
   } catch (e) {
-    return false;
+    return '';
   }
 }
 
@@ -37,10 +43,10 @@ export default async function decorate(block) {
   const token = String(config['partner-token'] || '').trim();
 
   const title = replacePartnerToken(config.title, partner, token);
-  const description = String(config.description || '').trim();
+  const description = replacePartnerToken(config.description, partner, token).trim();
   const buttonText = String(config['button-text'] || '').trim();
   const buttonUrlRaw = replacePartnerToken(config['button-url'], partner, token);
-  const buttonUrl = String(buttonUrlRaw || '').trim();
+  const buttonUrl = getSafeUrl(String(buttonUrlRaw || '').trim());
 
   const wrapper = document.createElement('div');
   wrapper.className = 'promo-wrapper';
@@ -59,7 +65,7 @@ export default async function decorate(block) {
     wrapper.append(text);
   }
 
-  if (buttonText && buttonUrl && isSafeUrl(buttonUrl)) {
+  if (buttonText && buttonUrl) {
     const buttonWrapper = document.createElement('p');
     buttonWrapper.className = 'button-wrapper';
 
