@@ -323,10 +323,7 @@ async function loadLazy(doc) {
 
   loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
   loadFonts();
-  if (new URL(window.location.href).searchParams.get('dapreview')) {
-    console.log("loading dapreview");
-    import('https://da.live');
-  }
+ 
 }
 
 /**
@@ -346,3 +343,10 @@ async function loadPage() {
 }
 
 loadPage();
+/* Place at the very bottom of scripts.js */
+(async function loadDa() {
+  if (!new URL(window.location.href).searchParams.get('dapreview')) return;
+  // eslint-disable-next-line import/no-unresolved
+  import('https://da.live/scripts/dapreview.js').then(({ default: daPreview }) => daPreview(loadPage));
+}());
+
